@@ -1,47 +1,40 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/site.css"><title>Version 1, hybrid solar dryer</title></head><body><main>
 <div class="crumb"><a href="/">Projects</a> / <a href="/dryer">Hybrid solar dryer</a> / Version 1</div>
-<h1>Version 1: interactive 3D prototype</h1>
-<p class="lede">A shared picture of the whole machine before any metal is cut, so all nine team members agree on layout, sizes and how their parts connect.</p>
+<h1>Version 1: separate stations</h1>
+<p class="lede">The first full picture of the dryer. Each job has its own station on the ground, linked by short ducts and a pipe.</p>
 <a class="cta" href="/dryer/v1/prototype">Open the 3D prototype</a>
 
-<h2>What this version set out to do</h2>
-<ul class="plan">
- <li>Show the complete system in 3D: collector, trough boost, wax heat store, three-zone chamber, agitator, sensors, control, AI unit, sorting conveyor, vision station and smart storage.</li>
- <li>Explain every part on tap: owner, what it does, key components, build tip and what to measure.</li>
- <li>Let the team swap options and compare: collector size, concentrator on or off, wax amount, one or three zones, agitator, thermostat or AI, backup heater, weather, batch size.</li>
- <li>Estimate drying time, heat after sunset, backup energy, tray evenness, solar share and rough build cost in naira.</li>
- <li>Animate a day and a full drying batch: sun tracking, wax melting, airflow, product darkening zone by zone.</li>
- <li>Work on phones and projectors for supervisor meetings.</li>
-</ul>
+<h2>What it does, in one line</h2>
+<div class="box">It dries sliced tomatoes and peppers with sunlight, keeps drying at night with heat stored in wax, and runs itself using sensors and AI.</div>
 
-<h2>Prototype sizing used</h2>
+<h2>How it works</h2>
+<ol class="steps">
+ <li><b>Sort</b>A conveyor carries fresh produce under a camera. Bad pieces are pushed off; good ones are sliced and loaded on trays.</li>
+ <li><b>Heat the air</b>A flat solar panel on legs warms outside air. A small curved mirror (the trough) follows the sun and adds extra heat on clear days.</li>
+ <li><b>Store heat</b>The warm air passes a box of wax tubes. The wax melts by day and gives heat back after sunset.</li>
+ <li><b>Dry</b>Hot air goes into a cabinet with three zones of trays. Each zone has its own fan, and a rake turns the pieces so they dry evenly.</li>
+ <li><b>Think</b>Sensors weigh the trays and read the air. The controller and AI decide when to use sun, wax heat or the backup heater, and when the batch is done.</li>
+ <li><b>Store</b>Dried product goes into sealed drums that watch humidity and warn before mould starts.</li>
+</ol>
+
+<h2>Who builds what</h2>
 <table>
- <tr><th>Item</th><th>Value</th></tr>
- <tr><td>Flat-plate collector</td><td>2 to 3 m²</td></tr>
- <tr><td>Tracked trough boost</td><td>About 1.2 m², single axis</td></tr>
- <tr><td>Paraffin wax store</td><td>Up to 30 kg</td></tr>
- <tr><td>Drying chamber</td><td>1.0 × 0.6 × 1.2 m, 3 zones, 6 trays</td></tr>
- <tr><td>Batch</td><td>4 to 16 kg fresh tomato slices</td></tr>
+ <tr><td>ME1</td><td>Solar panel, mirror trough, wax store</td></tr>
+ <tr><td>ME2</td><td>Drying cabinet and airflow</td></tr>
+ <tr><td>ME3</td><td>Rake that turns the product</td></tr>
+ <tr><td>MEE1</td><td>Moisture sensing</td></tr>
+ <tr><td>MEE2</td><td>Electronics, control and safety</td></tr>
+ <tr><td>MEE3</td><td>AI control</td></tr>
+ <tr><td>MEE4</td><td>Camera grading</td></tr>
+ <tr><td>MEE5</td><td>Sorting conveyor</td></tr>
+ <tr><td>MEE6</td><td>Smart storage</td></tr>
 </table>
 
-<h2>Who owns what</h2>
-<table>
- <tr><th>Code</th><th>Part</th></tr>
- <tr><td>ME1</td><td>Solar collector, trough boost, wax heat store</td></tr>
- <tr><td>ME2</td><td>Multi-zone chamber, airflow and CFD</td></tr>
- <tr><td>ME3</td><td>Agitation and redistribution mechanism</td></tr>
- <tr><td>MEE1</td><td>Moisture sensing by sensor fusion</td></tr>
- <tr><td>MEE2</td><td>Embedded control and safety</td></tr>
- <tr><td>MEE3</td><td>AI adaptive drying control</td></tr>
- <tr><td>MEE4</td><td>Machine vision grading</td></tr>
- <tr><td>MEE5</td><td>Sorting and handling</td></tr>
- <tr><td>MEE6</td><td>IoT storage monitoring</td></tr>
-</table>
-
-<h2>Known limits</h2>
+<h2>Using the 3D model</h2>
 <ul class="plan">
- <li>Parts are simplified models, not CAD-accurate drawings.</li>
- <li>Performance numbers come from a simplified heat balance for comparing options; real tests replace them.</li>
+ <li>Tap a part or pick it under “Go to part” to zoom in and read about it.</li>
+ <li>On a selected part, use “Explode this part” to see its pieces, and “Isolate” to fade everything else.</li>
+ <li>Change options on the left; the numbers on the right update. “Run a batch” shows the trays drying.</li>
 </ul>
-<p class="note">Next: <a href="/dryer/v2">version 2</a>.</p>
+<p class="note">Numbers are estimates for comparing options, not test results. Next: <a href="/dryer/v2">version 2</a>.</p>
 </main></body></html>

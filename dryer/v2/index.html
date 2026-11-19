@@ -1,42 +1,44 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/site.css"><title>Version 2, hybrid solar dryer</title></head><body><main>
 <div class="crumb"><a href="/">Projects</a> / <a href="/dryer">Hybrid solar dryer</a> / Version 2</div>
 <h1>Version 2: one all-in-one machine</h1>
-<p class="lede">Version 1 showed separate stations joined by ducts and pipes. Version 2 packs every function into one wheeled body, so heat travels shorter paths, the machine is easier to move and present, and it reads as a single product.</p>
+<p class="lede">Everything from version 1, packed into a single cabinet on wheels: 3.1 m long, 1.1 m deep, 2.5 m tall.</p>
 <a class="cta" href="/dryer/v2/prototype">Open the 3D prototype</a>
 
-<h2>What this version set out to do</h2>
-<ul class="plan">
- <li>Merge all modules into one frame: processing bay on the left, three-zone chamber in the middle, storage drawers on the right, electronics in the base.</li>
- <li>Make the roof the solar collector, with a PV strip over the processing bay for the electronics.</li>
- <li>Replace the separate tracked trough with a mirrored reflector wing hinged on the roof. It opens to boost the collector and closes over the glass at night and in bad weather.</li>
- <li>Move the wax store inside the machine as a heat wall behind the chamber, so hot air passes through it with no external ducts.</li>
- <li>Add a cutaway view to look inside the closed body, plus exploded view to pull modules apart.</li>
- <li>Add a touchscreen and emergency stop on the front pillar, and casters for moving the machine.</li>
-</ul>
+<h2>What it does, in one line</h2>
+<div class="box">Put fresh produce in the hopper on the left; take dried, graded product out of the drawers on the right. The sun does most of the heating, even at night.</div>
 
-<h2>Changes from version 1</h2>
+<h2>How it works</h2>
+<ol class="steps">
+ <li><b>Load</b>Fresh produce goes into the hopper on the left. A short belt carries it through a dark hood with a camera and light. Bad pieces drop into a reject drawer; good ones reach the loading shelf.</li>
+ <li><b>Heat the air</b>The whole roof is a solar panel that warms air. A mirror lid at the back opens on sunny days to bounce in extra sunlight, and closes over the glass at night or in storms.</li>
+ <li><b>Store heat</b>The hot air flows down through a wall of wax tubes behind the trays. The wax melts by day and keeps the air warm after sunset.</li>
+ <li><b>Dry</b>Fans in that wall push hot air across three zones of trays behind glass doors. Rakes turn the pieces. Moist air leaves through the chimney.</li>
+ <li><b>Think</b>Sensors weigh the trays and read the air. The controller in the base and the AI decide the heat source, fan speeds and when to open the mirror. A touchscreen shows everything.</li>
+ <li><b>Store</b>Dried product goes into sealed drawers on the right that watch humidity and CO₂ and warn before mould starts.</li>
+</ol>
+
+<h2>What changed from version 1</h2>
 <table>
- <tr><th>Area</th><th>Version 1</th><th>Version 2</th></tr>
- <tr><td>Layout</td><td>Separate stations</td><td>One body, 3.1 × 1.1 m, 2.5 m tall</td></tr>
- <tr><td>Collector</td><td>Free-standing, 2 to 3 m²</td><td>Roof, about 2.8 m²</td></tr>
- <tr><td>Concentrator</td><td>Tracked parabolic trough with pipe</td><td>Hinged reflector wing</td></tr>
- <tr><td>Heat store</td><td>Separate wax box, up to 30 kg</td><td>Internal wax heat wall, up to 40 kg</td></tr>
- <tr><td>Chamber</td><td>6 small trays</td><td>6 large trays, batch up to 24 kg</td></tr>
- <tr><td>Sorting and vision</td><td>Open conveyor with camera arch</td><td>Hopper, short belt and closed vision hood in the left bay</td></tr>
- <tr><td>Storage</td><td>Separate drums</td><td>Sealed sensor drawers in the right bay</td></tr>
- <tr><td>Electronics</td><td>Box on the chamber side</td><td>Base technical bay, touchscreen, casters</td></tr>
+ <tr><th></th><th>Version 1</th><th>Version 2</th></tr>
+ <tr><td>Shape</td><td>Separate stations</td><td>One cabinet on wheels</td></tr>
+ <tr><td>Solar heat</td><td>Panel on legs</td><td>The roof</td></tr>
+ <tr><td>Extra sun</td><td>Moving mirror trough with pipe</td><td>Mirror lid on the roof</td></tr>
+ <tr><td>Heat store</td><td>Wax box outside</td><td>Wax wall inside</td></tr>
+ <tr><td>Batch</td><td>Up to 16 kg</td><td>Up to 24 kg</td></tr>
+ <tr><td>Electronics</td><td>Box on the side</td><td>In the base, with touchscreen</td></tr>
 </table>
 
-<h2>Open questions for the team</h2>
+<h2>Using the 3D model</h2>
 <ul class="plan">
- <li>Can the frame be split into bolt-together modules for transport through doors?</li>
- <li>Does the wing need its own wind sensor, or can MEE2 use one shared weather sensor?</li>
- <li>Manual tray loading or an automatic tray feeder from the sorting belt?</li>
+ <li>Pick a part under “Go to part” to zoom in; everything else fades so you can see it even inside the cabinet.</li>
+ <li>“Explode this part” spreads its pieces apart. “Cutaway” opens the panels. “Exploded view” separates the whole machine.</li>
+ <li>Change options on the left; the numbers on the right update. “Run a batch” shows the trays drying.</li>
 </ul>
 
-<h2>Known limits</h2>
+<h2>Still to decide</h2>
 <ul class="plan">
- <li>Parts are simplified models, not CAD-accurate drawings.</li>
- <li>Performance numbers come from a simplified heat balance for comparing options; real tests replace them.</li>
+ <li>Bolt-together modules so it fits through doors?</li>
+ <li>Load trays by hand, or an automatic feeder from the belt?</li>
 </ul>
+<p class="note">Numbers are estimates for comparing options, not test results.</p>
 </main></body></html>

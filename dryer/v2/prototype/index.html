@@ -79,6 +79,7 @@ select{width:100%;font:inherit;padding:6px 8px;border-radius:8px;border:1px soli
 #info dt{color:var(--muted)}
 #info dd{margin:0}
 #infoClose{position:absolute;right:10px;top:10px;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:18px;cursor:pointer;line-height:1}
+.partActs{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}.partActs button{flex:1 1 auto;font:inherit;font-size:14px;font-weight:600;padding:8px 12px;border-radius:9px;border:1px solid var(--btn);background:transparent;color:var(--ink);cursor:pointer}.partActs button[aria-pressed="true"]{background:var(--btn);color:var(--btnInk)}
 @media (max-width:1100px){#info{width:auto;left:16px;right:16px;transform:none;min-width:0}}
 @media (max-width:860px){
  #app{height:auto;overflow:visible}
@@ -111,6 +112,7 @@ select{width:100%;font:inherit;padding:6px 8px;border-radius:8px;border:1px soli
    <dt>Build tip</dt><dd id="iBuild"></dd>
    <dt>We measure</dt><dd id="iMetric"></dd>
   </dl>
+  <div class="partActs"><button id="pExplode" aria-pressed="false">Explode this part</button><button id="pIso" aria-pressed="false">Isolate</button><button id="pBack">Zoom out</button></div>
  </aside>
  <aside id="read" class="panel" aria-label="Results">
   <div class="clock">
@@ -468,9 +470,9 @@ function select(k,fly){
  $("#info").classList.add("open");
  if(selHelper){scene.remove(selHelper);selHelper=null}
  selHelper=new THREE.Box3Helper(new THREE.Box3(),new THREE.Color(0xffb020));scene.add(selHelper);
- if(fly){const b=new THREE.Box3().setFromObject(parts[k]);focusTo=b.getCenter(new THREE.Vector3())}
+ resetPart();if(fly){flyTo(k,1.6);iso=true;$("#pIso").setAttribute("aria-pressed","true")}applyGhosts();
 }
-function deselect(){selKey=null;$("#info").classList.remove("open");if(selHelper){scene.remove(selHelper);selHelper=null}jump.value=""}
+function deselect(){resetPart();selKey=null;$("#info").classList.remove("open");if(selHelper){scene.remove(selHelper);selHelper=null}jump.value="";applyGhosts()}
 $("#infoClose").addEventListener("click",deselect);
 document.addEventListener("keydown",e=>{if(e.key==="Escape")deselect()});
 const ray=new THREE.Raycaster(),mv=new THREE.Vector2();let downAt=null;
@@ -503,6 +505,7 @@ function applyVisibility(){
  cutaway.forEach(m=>m.visible=!cfg.cutaway);
  airPts.visible=cfg.airflow;
  $("#labels").style.display=cfg.labels?"":"none";
+ if(typeof applyGhosts==="function")applyGhosts();
 }
 function recalc(){
  sim=simulate();
@@ -615,13 +618,39 @@ function frame(now){
   pGeo.attributes.position.needsUpdate=true;pGeo.attributes.color.needsUpdate=true;pMat.opacity=.35+.55*intensity}
 
  if(selHelper&&selKey)selHelper.box.setFromObject(parts[selKey]);
- if(focusTo){controls.target.lerp(focusTo,.08);if(controls.target.distanceTo(focusTo)<.01)focusTo=null}
+ stepFocus();
  controls.update();
  renderer.render(scene,camera);
- if(cfg.labels){const W=stage.clientWidth,H=stage.clientHeight;labEls.forEach(L=>{const g=parts[L.k];if(!g.visible){L.el.style.display="none";return}
+ if(cfg.labels){const W=stage.clientWidth,H=stage.clientHeight;labEls.forEach(L=>{const g=parts[L.k];if(!g.visible||(iso&&selKey&&L.k!==selKey)){L.el.style.display="none";return}
   pv3.copy(L.a).add(g.position);pv3.project(camera);if(pv3.z>1||Math.abs(pv3.x)>1.1||Math.abs(pv3.y)>1.1){L.el.style.display="none";return}
   L.el.style.display="";L.el.style.left=((pv3.x+1)/2*W)+"px";L.el.style.top=((1-pv3.y)/2*H)+"px"})}
  requestAnimationFrame(frame);
+}
+const SHELL=["control","chamber"];
+/* ---------- focus, isolate, per-part explode ---------- */
+const HOME_P=camera.position.clone(),HOME_T=controls.target.clone();
+const STATIC_MATS=new Set(Object.values(M));
+function prepGhost(g){const map=new Map();g.traverse(o=>{if(o.isMesh){if(STATIC_MATS.has(o.material)){if(!map.has(o.material))map.set(o.material,o.material.clone());o.material=map.get(o.material)}else if(o.material&&o.material.userData&&o.material.userData.ghostOf===g.userData.key){map.set(o.material,o.material)}}});
+ const mats=[...new Set([...(g.userData.ghostMats||[]),...map.values()])];mats.forEach(m=>{m.userData.ghostOf=g.userData.key;if(m.userData.o===undefined){m.userData.o=m.opacity;m.userData.t=m.transparent;m.userData.dw=m.depthWrite}});g.userData.ghostMats=mats;g.userData.ghostA=1}
+Object.values(parts).forEach(prepGhost);
+items.forEach(it=>it.m.userData.noExp=true);
+function setGhost(g,a){g.userData.ghostA=a;g.userData.ghostMats.forEach(m=>{const t=a<.99;m.transparent=t||m.userData.t;m.opacity=m.userData.o*a;m.depthWrite=t?false:m.userData.dw;m.needsUpdate=true})}
+let iso=false,pex=false,pexAmt=0,expKey=null,fly=null;
+function applyGhosts(){Object.entries(parts).forEach(([k,g])=>{let a=1;if(iso&&selKey&&k!==selKey)a=.15;else if(cfg.exploded&&SHELL.includes(k)&&k!==selKey)a=.28;if(g.userData.ghostA!==a)setGhost(g,a)});slices.forEach(im=>im.visible=parts.chamber.userData.ghostA>.5)}
+function flyTo(k,mult){const b=new THREE.Box3().setFromObject(parts[k]);const c=b.getCenter(new THREE.Vector3());const s=Math.max(.4,b.getSize(new THREE.Vector3()).length());const dir=camera.position.clone().sub(controls.target).normalize();if(dir.y<.3){dir.y=.3;dir.normalize()}const t=c.clone();t.y-=.16*s*Math.min(mult,2);fly={t,p:t.clone().addScaledVector(dir,Math.max(1.1,s*mult))}}
+controls.addEventListener("start",()=>{fly=null});
+function prepExplode(g){g.updateMatrixWorld(true);const gb=new THREE.Box3().setFromObject(g);const pc=gb.getCenter(new THREE.Vector3());const bs=Math.max(.3,gb.getSize(new THREE.Vector3()).length());const list=[];
+ g.traverse(o=>{if(!o.isMesh||o.userData.noExp)return;const wc=new THREE.Box3().setFromObject(o).getCenter(new THREE.Vector3());const dW=wc.clone().sub(pc);const len=dW.length();const off=dW.clone().multiplyScalar(1.5);if(len>1e-3)off.addScaledVector(dW.clone().normalize(),.12*bs);else off.set(0,.12*bs,0);const p=o.parent;const a=p.worldToLocal(wc.clone()),bb=p.worldToLocal(wc.clone().add(off));list.push({o,base:o.position.clone(),off:bb.sub(a)})});
+ g.userData.exp=list}
+function resetPart(){if(expKey&&parts[expKey].userData.exp)parts[expKey].userData.exp.forEach(e=>e.o.position.copy(e.base));pex=false;pexAmt=0;expKey=null;iso=false;
+ const be=$("#pExplode"),bi=$("#pIso");if(be){be.setAttribute("aria-pressed","false");be.textContent="Explode this part"}if(bi)bi.setAttribute("aria-pressed","false")}
+$("#pExplode").addEventListener("click",()=>{if(!selKey)return;if(!pex){if(expKey!==selKey){if(expKey&&parts[expKey].userData.exp)parts[expKey].userData.exp.forEach(e=>e.o.position.copy(e.base));prepExplode(parts[selKey]);expKey=selKey}pex=true;flyTo(selKey,3.0)}else{pex=false;flyTo(selKey,1.5)}
+ $("#pExplode").setAttribute("aria-pressed",String(pex));$("#pExplode").textContent=pex?"Put it back together":"Explode this part"});
+$("#pIso").addEventListener("click",()=>{if(!selKey)return;iso=!iso;$("#pIso").setAttribute("aria-pressed",String(iso));applyGhosts()});
+$("#pBack").addEventListener("click",()=>{deselect();fly={t:HOME_T.clone(),p:HOME_P.clone()}});
+function stepFocus(){
+ if(fly){controls.target.lerp(fly.t,.09);camera.position.lerp(fly.p,.09);if(camera.position.distanceTo(fly.p)<.01&&controls.target.distanceTo(fly.t)<.01)fly=null}
+ if(expKey){pexAmt+=((pex?1:0)-pexAmt)*.1;const L=parts[expKey].userData.exp;if(L)L.forEach(e=>e.o.position.copy(e.base).addScaledVector(e.off,pexAmt));if(!pex&&pexAmt<.002){if(L)L.forEach(e=>e.o.position.copy(e.base));expKey=null;pexAmt=0}}
 }
 syncUI();applyVisibility();recalc();updateBars();
 requestAnimationFrame(frame);
