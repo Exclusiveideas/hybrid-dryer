@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hybrid solar dryer, version 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#E6ECE9;--panel:rgba(248,250,248,.93);--ink:#16212A;--muted:#55636E;--line:#C6D0CC;--sun:#D98E0B;--heat:#C2412A;--wax:#3F8E7F;--chip:#E1E8E4;--btn:#16212A;--btnInk:#F6F8F7;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12181D;--panel:rgba(24,31,37,.93);--ink:#E7EDEA;--muted:#98A6AF;--line:#33414B;--sun:#F0AE38;--heat:#EC6B50;--wax:#7CC2B3;--chip:#25313B;--btn:#E7EDEA;--btnInk:#12181D;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12181D;--panel:rgba(24,31,37,.93);--ink:#E7EDEA;--muted:#98A6AF;--line:#33414B;--sun:#F0AE38;--heat:#EC6B50;--wax:#7CC2B3;--chip:#25313B;--btn:#E7EDEA;--btnInk:#12181D;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.45}
+h1,h2,h3{font-family:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;font-weight:600;margin:0;letter-spacing:.01em}
+#app{position:relative;height:100%;overflow:hidden}
+#stage{position:absolute;inset:0}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none}
+#labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lab{position:absolute;transform:translate(-50%,-100%);pointer-events:auto;cursor:pointer;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:2px 9px 2px 3px;font-size:12.5px;white-space:nowrap;display:flex;gap:6px;align-items:center;font-family:inherit}
+.lab b{background:var(--btn);color:var(--btnInk);border-radius:999px;padding:0 6px;font-weight:600;font-size:11.5px}
+.lab:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
+.panel{position:absolute;z-index:2;background:var(--panel);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+#title{left:16px;top:16px;width:292px;padding:12px 16px}
+#title h1{font-size:23px;line-height:1.05;white-space:nowrap}
+#title p{margin:4px 0 0;color:var(--muted);font-size:13px}
+#build{left:16px;top:112px;width:292px;max-height:calc(100% - 128px);overflow:auto}
+#read{right:16px;top:16px;width:286px;max-height:calc(100% - 32px);overflow:auto}
+#info{left:50%;bottom:16px;transform:translateX(-50%);width:min(540px,calc(100% - 660px));min-width:320px;display:none}
+#info.open{display:block}
+#hint{position:absolute;left:50%;top:16px;transform:translateX(-50%);font-size:13px;color:#fff;background:rgba(20,28,34,.55);padding:5px 12px;border-radius:999px;pointer-events:none;transition:opacity .6s}
+.grp{border-top:1px solid var(--line);padding-top:10px;margin-top:10px}
+.grp:first-child{border:0;margin:0;padding:0}
+.grp h3{font-size:17px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:baseline}
+.grp h3 small{font-family:"Barlow",sans-serif;font-weight:500;font-size:12px;color:var(--muted)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 0;font-size:14px}
+.seg{display:flex;background:var(--chip);border-radius:8px;padding:2px;gap:2px}
+.seg button{border:0;background:transparent;color:var(--ink);font:inherit;font-size:13px;padding:4px 8px;border-radius:6px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--btn);color:var(--btnInk)}
+.tog{position:relative;width:38px;height:22px;flex:none}
+.tog input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer}
+.tog span{position:absolute;inset:0;background:var(--line);border-radius:999px;transition:background .2s;pointer-events:none}
+.tog span::after{content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .2s}
+.tog input:checked+span{background:var(--sun)}
+.tog input:checked+span::after{transform:translateX(16px)}
+input[type=range]{accent-color:var(--sun);width:100%}
+.rng{margin:4px 0 8px}
+.rng label{display:flex;justify-content:space-between;font-size:14px}
+.rng output{font-weight:600}
+select{width:100%;font:inherit;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--chip);color:var(--ink)}
+.clock{display:flex;align-items:center;gap:10px}
+.clock output{font-family:"Barlow Condensed",sans-serif;font-size:24px;font-weight:600;min-width:58px;text-align:right}
+.iconbtn{width:34px;height:34px;flex:none;border-radius:50%;border:0;background:var(--btn);color:var(--btnInk);cursor:pointer;font-size:14px}
+.now{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 4px}
+.now div{background:var(--chip);border-radius:10px;padding:7px 10px}
+.now span{display:block;font-size:12px;color:var(--muted)}
+.now strong{font-family:"Barlow Condensed",sans-serif;font-size:21px;font-weight:600;line-height:1.1}
+.big{margin:6px 0 8px}
+.big strong{display:block;font-family:"Barlow Condensed",sans-serif;font-size:46px;line-height:1;font-weight:600}
+.big span{color:var(--muted);font-size:13px}
+.kv{display:flex;justify-content:space-between;font-size:14px;padding:4px 0;border-bottom:1px dashed var(--line)}
+.kv b{font-weight:600}
+.bars{margin:10px 0}
+.bar{display:grid;grid-template-columns:58px 1fr 38px;align-items:center;gap:8px;font-size:13px;margin:4px 0}
+.bar i{display:block;height:8px;border-radius:4px;background:var(--chip);overflow:hidden}
+.bar i em{display:block;height:100%;width:0;background:var(--heat)}
+.actions{display:flex;gap:8px;margin-top:8px}
+.actions button{flex:1;font:inherit;font-weight:600;padding:9px;border-radius:9px;cursor:pointer;border:1px solid var(--btn)}
+#run{background:var(--btn);color:var(--btnInk)}
+#reset{background:transparent;color:var(--ink)}
+#status{font-size:13px;color:var(--muted);min-height:19px;margin-top:6px}
+.note{font-size:12px;color:var(--muted);margin:10px 0 0}
+#info h2{font-size:24px;margin:2px 0 8px;padding-right:30px}
+#info .own{display:inline-block;background:var(--btn);color:var(--btnInk);border-radius:999px;padding:1px 10px;font-size:12.5px;font-weight:600}
+#info dl{display:grid;grid-template-columns:96px 1fr;gap:5px 12px;margin:0;font-size:14px}
+#info dt{color:var(--muted)}
+#info dd{margin:0}
+#infoClose{position:absolute;right:10px;top:10px;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:18px;cursor:pointer;line-height:1}
+@media (max-width:1100px){#info{width:auto;left:16px;right:16px;transform:none;min-width:0}}
+@media (max-width:860px){
+ #app{height:auto;overflow:visible}
+ #stage{position:relative;height:58vh;min-height:340px}
+ .panel{position:static;width:auto;max-height:none;margin:10px;transform:none}
+ #title{max-width:none}
+ #info{margin-top:10px}
+ #hint{font-size:12px}
+}
+@media (prefers-reduced-motion:reduce){#hint{transition:none}}
+</style>
+</head>
+<body>
+<div id="app">
+ <header id="title" class="panel">
+  <h1>Hybrid solar dryer, v2</h1>
+  <p>All-in-one machine, AATU Ibadan 2026/27</p>
+ </header>
+ <div id="stage" role="img" aria-label="3D model of the all-in-one dryer. Drag to orbit, scroll or pinch to zoom, tap a part for details.">
+  <div id="labels"></div>
+  <div id="hint">Drag to orbit, pinch or scroll to zoom, tap any part</div>
+ </div>
+ <aside id="info" class="panel" aria-live="polite">
+  <button id="infoClose" aria-label="Close details">×</button>
+  <span class="own" id="iOwn"></span>
+  <h2 id="iName"></h2>
+  <dl>
+   <dt>What it does</dt><dd id="iDoes"></dd>
+   <dt>Key parts</dt><dd id="iParts"></dd>
+   <dt>Build tip</dt><dd id="iBuild"></dd>
+   <dt>We measure</dt><dd id="iMetric"></dd>
+  </dl>
+ </aside>
+ <aside id="read" class="panel" aria-label="Results">
+  <div class="clock">
+   <button class="iconbtn" id="play" aria-label="Play the day">▶</button>
+   <input type="range" id="time" min="0" max="24" step="0.25" value="13" aria-label="Time of day">
+   <output id="clock">13:00</output>
+  </div>
+  <div class="now">
+   <div><span>Sunlight</span><strong id="nSun">0</strong></div>
+   <div><span>Chamber air</span><strong id="nTemp">0</strong></div>
+   <div><span>Wax melted</span><strong id="nWax">0</strong></div>
+   <div><span>Heat from</span><strong id="nSrc">Sun</strong></div>
+  </div>
+  <div class="grp">
+   <h3>Per batch</h3>
+   <div class="big"><strong id="rTime">0</strong><span id="rTimeLbl">to dry 10 kg of sliced tomatoes</span></div>
+   <div class="kv"><span>Heat after sunset</span><b id="rNight">0</b></div>
+   <div class="kv"><span>Backup heater use</span><b id="rBack">0</b></div>
+   <div class="kv"><span>Evenness across trays</span><b id="rEven">0</b></div>
+   <div class="kv"><span>Share of heat from sun</span><b id="rSolar">0</b></div>
+   <div class="kv"><span>Rough build cost</span><b id="rCost">0</b></div>
+   <div class="kv"><span>Footprint</span><b>3.1 × 1.1 m, 2.5 m tall</b></div>
+   <div class="bars" aria-label="Drying progress by zone">
+    <div class="bar"><span>Top</span><i><em id="b2"></em></i><span id="p2">0%</span></div>
+    <div class="bar"><span>Middle</span><i><em id="b1"></em></i><span id="p1">0%</span></div>
+    <div class="bar"><span>Bottom</span><i><em id="b0"></em></i><span id="p0">0%</span></div>
+   </div>
+   <div class="actions"><button id="run">Run a batch</button><button id="reset">Reset trays</button></div>
+   <div id="status" aria-live="polite"></div>
+   <p class="note">Numbers come from a simplified heat balance for comparing options. Your real tests replace them.</p>
+  </div>
+ </aside>
+ <aside id="build" class="panel" aria-label="Configure the dryer">
+  <div class="grp">
+   <h3>Heat <small>ME1</small></h3>
+   <div class="row"><span>Roof collector</span><b>2.8 m²</b></div>
+   <div class="row"><span>Reflector wing</span><label class="tog"><input type="checkbox" data-key="wings" aria-label="Reflector wing"><span></span></label></div>
+   <div class="rng"><label for="pcmR"><span>Wax heat wall</span><output id="pcmO">30 kg</output></label><input id="pcmR" type="range" min="0" max="40" step="5" data-key="pcm"></div>
+  </div>
+  <div class="grp">
+   <h3>Chamber <small>ME2, ME3</small></h3>
+   <div class="row"><span>Air zones</span><div class="seg" data-key="zones"><button data-v="1">1 zone</button><button data-v="3">3 zones</button></div></div>
+   <div class="row"><span>Auto agitator</span><label class="tog"><input type="checkbox" data-key="agitator" aria-label="Auto agitator"><span></span></label></div>
+  </div>
+  <div class="grp">
+   <h3>Brain <small>MEE1 to MEE3</small></h3>
+   <div class="row"><span>Control</span><div class="seg" data-key="control"><button data-v="thermo">Thermostat</button><button data-v="ai">AI adaptive</button></div></div>
+   <div class="row"><span>Backup heater</span><label class="tog"><input type="checkbox" data-key="backup" aria-label="Backup heater"><span></span></label></div>
+  </div>
+  <div class="grp">
+   <h3>Conditions</h3>
+   <div class="row"><div class="seg" data-key="weather" style="width:100%"><button data-v="sunny" style="flex:1">Sunny</button><button data-v="harmattan" style="flex:1">Harmattan</button><button data-v="rainy" style="flex:1">Rainy</button></div></div>
+   <div class="rng"><label for="batchR"><span>Batch size</span><output id="batchO">10 kg</output></label><input id="batchR" type="range" min="6" max="24" step="1" data-key="batch"></div>
+  </div>
+  <div class="grp">
+   <h3>View</h3>
+   <div class="row"><span>Cutaway (open panels)</span><label class="tog"><input type="checkbox" data-key="cutaway" aria-label="Cutaway"><span></span></label></div>
+   <div class="row"><span>Exploded view</span><label class="tog"><input type="checkbox" data-key="exploded" aria-label="Exploded view"><span></span></label></div>
+   <div class="row"><span>Show airflow</span><label class="tog"><input type="checkbox" data-key="airflow" aria-label="Show airflow"><span></span></label></div>
+   <div class="row"><span>Part labels</span><label class="tog"><input type="checkbox" data-key="labels" aria-label="Part labels"><span></span></label></div>
+   <div class="rng"><label for="jump"><span>Go to part</span></label><select id="jump"><option value="">Choose a part</option></select></div>
+  </div>
+ </aside>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s);
+const cfg={wings:true,pcm:30,zones:3,agitator:true,control:"ai",backup:true,weather:"sunny",batch:15,cutaway:false,exploded:false,airflow:true,labels:true};
+const WX={
+ sunny:{peak:700,diff:.25,amb:30,sky:0x8fc3e6,fog:.004,sunCol:0xfff0d8},
+ harmattan:{peak:500,diff:.6,amb:28,sky:0xcbbca2,fog:.04,sunCol:0xffe2b8},
+ rainy:{peak:380,diff:.75,amb:25,sky:0x98a3ab,fog:.022,sunCol:0xe6eef5}
+};
+const INFO={
+ collector:{n:"Roof solar air collector",o:"ME1, thermal energy",d:"The whole roof is the collector: about 2.8 m² of black absorber under polycarbonate, tilted about 10° toward the sun. Air enters at the front edge and warms as it rises to the back.",p:"Finned black aluminium absorber, polycarbonate glazing, insulated roof tray, front intake grille with filter",b:"Build the roof as one tray that bolts onto the frame so it lifts off for maintenance.",m:"Outlet air temperature, collector efficiency"},
+ wings:{n:"Reflector wing (concentrator boost)",o:"ME1, thermal energy",d:"A mirrored lid hinged at the back of the roof. Opened, it bounces extra direct sun onto the collector. Closed, it covers the glass at night and in storms.",p:"Polished aluminium or mirror film on a light frame, linear actuator or stepper with worm gear, light sensors, wind sensor",b:"Your concentrator idea, made compact: no separate trough, no long pipes. Auto-close when wind or rain is detected.",m:"Extra heat per day with wing open versus closed"},
+ pcm:{n:"Wax heat wall",o:"ME1, thermal energy",d:"Hot air from the roof passes down through a wall of paraffin-filled tubes behind the chamber. The wax melts by day and gives heat back after sunset.",p:"Paraffin wax in sealed aluminium tubes, fins, insulated rear duct, access panel",b:"Being inside the machine, the wax wall loses far less heat than a separate store with ducts.",m:"Hours of useful heat after sunset"},
+ chamber:{n:"Three-zone drying chamber",o:"ME2, chamber and airflow",d:"Three stacked zones, each fed its own hot air from the rear wall, behind double glass doors. Two large trays per zone.",p:"Insulated panels, double glass doors, stainless mesh trays, zone dividers, chimney",b:"Run CFD on the rear supply slots so each zone gets the same air speed.",m:"Temperature and air speed spread between zones"},
+ fans:{n:"Zone fans",o:"ME2 with MEE2",d:"One fan per zone in the heat wall pushes air across the trays; the controller sets each speed.",p:"12 V brushless DC fans, servo dampers",b:"Keep fan motors on the cool side of the duct.",m:"Air speed per zone"},
+ agitator:{n:"Agitation and redistribution mechanism",o:"ME3, robotic handling",d:"Rakes sweep each zone’s top tray so pieces turn and dry evenly.",p:"Stepper motors, belt drive in the side pillar, aluminium rakes, limit switches",b:"Drive sits inside the pillar between chamber and storage, out of the hot air.",m:"Moisture spread between pieces"},
+ sensors:{n:"Moisture sensing by sensor fusion",o:"MEE1, intelligent sensing",d:"Load cells under each zone and humidity and temperature sensors on the side wall estimate moisture live.",p:"Load cells with HX711, SHT31, DS18B20, airflow sensor",b:"Kalman filter on the weights; pause the zone fan briefly when weighing.",m:"Error against oven-dry samples"},
+ control:{n:"Technical bay and touchscreen",o:"MEE2, embedded control",d:"The base holds battery, charge controller and main controller. A touchscreen on the pillar shows status and lets the operator start a batch.",p:"ESP32 controllers, relays and SSRs, 12 V battery, charge controller, thermal fuse, emergency stop, 7-inch touchscreen",b:"Keep all electronics in the base, away from heat and moisture, with a ventilated front panel.",m:"Fault tests passed, uptime"},
+ ai:{n:"AI adaptive control unit",o:"MEE3, AI drying",d:"Chooses between sun, wax heat and backup heat, sets zone fans and when to open the wing.",p:"Raspberry Pi or ESP32 running fuzzy rules, trained on your drying logs",b:"Start with fuzzy rules, then compare against thermostat control on identical batches.",m:"Energy saved and drying time"},
+ pv:{n:"Roof solar panel strip",o:"MEE2, embedded control",d:"The roof section over the processing bay is a PV panel that charges the battery for fans, motors and electronics.",p:"About 120 W panel, charge controller, 12 V battery",b:"Size the battery to run fans and controllers through the night.",m:"Hours of autonomy"},
+ camera:{n:"Vision hood",o:"MEE4, machine vision",d:"A closed hood with even LED light over the conveyor photographs every piece for color, size and defects.",p:"Raspberry Pi 5, camera module, LED ring, light-tight hood",b:"The enclosed hood gives perfectly steady lighting, which matters more than the model.",m:"Grading accuracy"},
+ conveyor:{n:"Intake hopper and sorting conveyor",o:"MEE5, sorting",d:"Fresh produce drops from the hopper onto a short belt; rejects are flipped into a chute to the drawer below, good pieces reach the loading shelf beside the chamber.",p:"Hopper, geared DC motor, belt, servo flap, reject chute and drawer, IR sensors",b:"Keep the belt at waist height so loading trays is comfortable.",m:"Items per minute, sorting accuracy"},
+ storage:{n:"Smart storage drawers",o:"MEE6, IoT and digital twin",d:"Sealed drawers in the right bay hold the dried product. Each has humidity, temperature and CO₂ sensing with alerts before mould risk rises.",p:"Sealed drawers with gaskets, ESP32, SHT31, SCD40 CO₂ sensor, MQTT dashboard",b:"Gasketed drawers keep humid air out; alert on rising CO₂.",m:"Warning lead time before spoilage"}
+};
+
+/* ---------- simulation ---------- */
+const ROOF=2.76,PCM_KWH_PER_KG=263/3600,CHAMBER_CAP=1.7,NIGHT_RATE=.4;
+function need(){return cfg.batch*0.92*0.722}
+function zoneFactors(){let f=cfg.zones===3?[1.04,1,.96]:[1.16,1,.78];if(cfg.agitator)f=f.map(v=>1+(v-1)*.4);return f}
+function ambient(h){return WX[cfg.weather].amb-1+3.5*Math.sin(Math.PI*2*(h-9)/24)}
+function wingOpenAt(G){return cfg.wings&&cfg.weather!=="rainy"&&G>40}
+function step(h,st,dt){
+ const w=WX[cfg.weather];
+ const G=(h>6&&h<18)?w.peak*Math.sin(Math.PI*(h-6)/12):0;
+ const effC=.40+.12*Math.min(1,cfg.pcm/20);
+ const flat=G*ROOF*effC*1.08/1000;
+ const tr=wingOpenAt(G)?G*(1-w.diff)*1.6*.85*.45*effC/1000:0;
+ const supply=flat+tr;
+ const cap=cfg.pcm*PCM_KWH_PER_KG;
+ let charge=0,dis=0,toCh=supply;
+ if(cap>0&&supply>.3){const want=Math.max(0,supply-CHAMBER_CAP)+.25*supply+tr*.5;charge=Math.max(0,Math.min(want,(cap-st.stored)/dt));st.stored+=charge*dt;toCh=supply-charge}
+ if(toCh>CHAMBER_CAP)toCh=CHAMBER_CAP;
+ if(supply<.3&&st.stored>1e-4){dis=Math.min(NIGHT_RATE,st.stored/dt);st.stored-=dis*dt;toCh+=dis}
+ let backup=0;
+ if(cfg.backup&&toCh<.3){backup=cfg.control==="ai"?.5:.9;toCh+=backup}
+ let T=ambient(h)+toCh*22;
+ if(cfg.control==="ai")T=Math.min(T,63);
+ T=Math.min(T,72);
+ let eff=.35*(cfg.control==="ai"?1.12:1);if(T>66)eff*=.9;
+ return{G,supply,tr,charge,dis,backup,toCh,T,useful:toCh<.12?-.05:toCh*eff,melt:cap>0?st.stored/cap:0};
+}
+function liveAt(h){const st={stored:0};let r=null;for(let i=0;i<24+h;i+=.5)r=step(i%24,st,.5);if(!r)r=step(h,st,.5);return r}
+function simulate(){
+ const st={stored:0},f=zoneFactors(),p=[0,0,0],N=need();let t=0,back=0,tot=0;
+ while(Math.min(p[0],p[1],p[2])<1&&t<24*14){const r=step((8+t+.25)%24,st,.5);for(let z=0;z<3;z++)p[z]=Math.max(0,p[z]+r.useful*.5/N*f[z]);back+=r.backup*.5;tot+=r.toCh*.5;t+=.5}
+ const s2={stored:0};let night=0;
+ for(let i=0;i<48;i+=.25){const h=i%24;const r=step(h,s2,.25);if(i>=24&&(h>=18||h<6)&&r.dis>.05)night+=.25}
+ return{hours:t,back,share:tot?(tot-back)/tot:0,night,done:Math.min(...p)>=1};
+}
+function buildCost(){return 380000+ROOF*45000+(cfg.wings?70000:0)+cfg.pcm*3500+cfg.zones*37000+(cfg.agitator?65000:0)+70000+60000+(cfg.control==="ai"?60000:0)+(cfg.backup?25000:0)+140000+170000+120000+90000}
+const naira=v=>"₦"+(v>=1e6?(v/1e6).toFixed(2)+"M":Math.round(v/1000)+"k");
+const fmtH=h=>h>=48?(h/24).toFixed(1)+" days":Math.round(h)+" h";
+
+/* ---------- three setup ---------- */
+const stage=$("#stage");
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.outputEncoding=THREE.sRGBEncoding;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.0;
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+stage.insertBefore(renderer.domElement,stage.firstChild);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(40,1,.05,200);
+const narrow=window.innerWidth<860;if(narrow)cfg.labels=false;
+camera.position.set(narrow?3.6:3.4,narrow?3.6:3.0,narrow?7.8:6.2);
+const controls=new THREE.OrbitControls(camera,renderer.domElement);
+controls.target.set(0,1.15,0);controls.enableDamping=true;controls.dampingFactor=.08;controls.maxPolarAngle=1.5;controls.minDistance=1.4;controls.maxDistance=14;
+
+const lin=hex=>new THREE.Color(hex).convertSRGBToLinear();
+function std(hex,metal,rough,extra){return new THREE.MeshStandardMaterial(Object.assign({color:lin(hex),metalness:metal,roughness:rough},extra||{}))}
+const M={
+ alu:std(0xcfd4d8,.85,.3),steel:std(0x8e969d,.75,.42),dark:std(0x24292e,.25,.6),absorber:std(0x101214,.35,.45),fin:std(0x2a2e33,.6,.4),
+ glass:new THREE.MeshPhysicalMaterial({color:lin(0xe4f1f7),metalness:0,roughness:.04,transparent:true,opacity:.2,depthWrite:false,envMapIntensity:1.4}),
+ mirror:std(0xf4f6f8,1,.05,{side:THREE.DoubleSide,envMapIntensity:1.6}),
+ body:std(0x2f5e58,.25,.5),bodyDark:std(0x234844,.25,.55),insul:std(0xeae7e0,.05,.8),rubber:std(0x1c1e21,0,.9),pv:std(0x1a2b4d,.45,.22),
+ white:std(0xf2f2ef,.1,.5),bin:std(0x2b5d9e,.05,.55),meshTray:std(0xb8bfc4,.8,.38,{transparent:true,opacity:.85}),vent:std(0x1d3a37,.2,.6)
+};
+const ledMat=new THREE.MeshBasicMaterial({color:0x3be07f});
+const heaterMat=std(0x3a2a24,.3,.6,{emissive:lin(0xff4a1c),emissiveIntensity:0});
+const lightPanel=std(0xffffff,0,.5,{emissive:lin(0xffffff),emissiveIntensity:.4});
+const screenMat=new THREE.MeshBasicMaterial({color:0x1f6f8b});
+function mk(geo,mat,x,y,z,parent){const m=new THREE.Mesh(geo,mat);m.position.set(x||0,y||0,z||0);m.castShadow=true;m.receiveShadow=true;(parent||scene).add(m);return m}
+const box=(w,h,d)=>new THREE.BoxGeometry(w,h,d);
+const cyl=(r,h,s)=>new THREE.CylinderGeometry(r,r,h,s||18);
+
+(function(){
+ const pm=new THREE.PMREMGenerator(renderer);const es=new THREE.Scene();
+ const g=new THREE.SphereGeometry(10,32,16);const pos=g.attributes.position;const cols=[];
+ const top=new THREE.Color(0xbcd7ee),hor=new THREE.Color(0xf3eee4),bot=new THREE.Color(0x6a5843);
+ for(let i=0;i<pos.count;i++){const y=pos.getY(i)/10;const c=y>0?hor.clone().lerp(top,y):hor.clone().lerp(bot,Math.min(1,-y*3));cols.push(c.r,c.g,c.b)}
+ g.setAttribute("color",new THREE.Float32BufferAttribute(cols,3));
+ es.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.BackSide})));
+ const sb=new THREE.Mesh(new THREE.PlaneGeometry(5,5),new THREE.MeshBasicMaterial({color:0xffffff,side:THREE.DoubleSide}));sb.position.set(2,9,3);sb.rotation.x=Math.PI/2;es.add(sb);
+ scene.environment=pm.fromScene(es,.04).texture;
+})();
+const hemi=new THREE.HemisphereLight(0xdcecff,0x6a5642,.6);scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xfff0d8,1.9);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+Object.assign(sun.shadow.camera,{left:-4,right:4,top:4,bottom:-4,near:1,far:40});sun.shadow.camera.updateProjectionMatrix();sun.shadow.bias=-.0004;sun.shadow.normalBias=.02;
+scene.add(sun);scene.add(sun.target);sun.target.position.set(0,0,0);
+const sunDisc=new THREE.Mesh(new THREE.SphereGeometry(1.1,24,12),new THREE.MeshBasicMaterial({color:0xfff3c8,fog:false}));scene.add(sunDisc);
+scene.fog=new THREE.FogExp2(0x8fc3e6,.004);
+const ground=mk(new THREE.PlaneGeometry(90,90),std(0x7a5a3c,0,1),0,0,0);ground.rotation.x=-Math.PI/2;ground.castShadow=false;
+const pad=mk(box(6,.05,3.6),std(0x9e9a92,0,.95),0,.025,0);pad.castShadow=false;
+
+/* ---------- machine ---------- */
+const parts={};
+function part(key,ex){const g=new THREE.Group();g.userData={key,base:new THREE.Vector3(),ex:new THREE.Vector3(ex[0],ex[1],ex[2])};scene.add(g);parts[key]=g;return g}
+const cutaway=[];
+const X0=-1.55,X1=-.72,X2=.52,X3=1.55,ZF=.55,ZB=-.55,DECK=.55,SLOPE=.165;
+const roofY=z=>2.05-z*Math.tan(SLOPE);
+
+/* frame + technical bay (control) */
+const tech=part("control",[0,0,1.1]);
+const posts=[X0,X1,X2,X3];
+posts.forEach(x=>[ZF,ZB].forEach(z=>{const h=roofY(z)-DECK-.04;mk(box(.05,h,.05),M.alu,x,DECK+h/2,z,tech)}));
+mk(box(X3-X0+.06,.05,1.16),M.alu,0,DECK,0,tech);
+mk(box(X3-X0,.04,1.1),M.bodyDark,0,.16,0,tech);
+[[0,.36,ZB,X3-X0,.4,.03],[X0,.36,0,.03,.4,1.1],[X3,.36,0,.03,.4,1.1]].forEach(a=>mk(box(a[3],a[4],a[5]),M.body,a[0],a[1],a[2],tech));
+const techFront=mk(box(X3-X0,.4,.03),M.body,0,.36,ZF,tech);cutaway.push(techFront);
+for(let i=0;i<14;i++){const v=mk(box(.12,.012,.005),M.vent,-1.3+i*.2,.3+(i%2)*.05,ZF+.018,tech);cutaway.push(v)}
+[-1.45,0,1.45].forEach(x=>[ZF-.08,ZB+.08].forEach(z=>{mk(cyl(.055,.04,18),M.rubber,x,.055,z,tech).rotation.x=Math.PI/2;mk(box(.06,.06,.06),M.steel,x,.12,z,tech)}));
+mk(box(.42,.24,.3),M.dark,.9,.3,-.1,tech);
+mk(box(.06,.05,.05),std(0xc23b2a,.3,.5),.78,.44,-.1,tech);mk(box(.06,.05,.05),M.dark,1.02,.44,-.1,tech);
+mk(box(.3,.22,.08),M.white,.2,.3,-.35,tech);
+const ctlLeds=[0,1,2].map(i=>mk(new THREE.SphereGeometry(.008,8,6),new THREE.MeshBasicMaterial({color:[0x3be07f,0xffb020,0x40a0ff][i]}),.12+i*.05,.38,-.31,tech));
+mk(box(.2,.14,.1),M.dark,-.25,.27,-.3,tech);
+const hmi=new THREE.Group();hmi.position.set(X2,1.3,ZF+.04);hmi.rotation.y=-.15;tech.add(hmi);
+mk(box(.24,.16,.025),M.dark,0,0,0,hmi);mk(new THREE.PlaneGeometry(.21,.13),screenMat,0,0,.014,hmi).castShadow=false;
+const estop=mk(cyl(.025,.02,16),std(0xd0201a,.1,.4),X2,1.12,ZF+.04,tech);estop.rotation.x=Math.PI/2;
+
+/* chamber */
+const chamber=part("chamber",[0,0,0]);
+mk(box(X2-X1,.04,1.08),M.insul,(X1+X2)/2,.6,0,chamber);
+mk(box(X2-X1,.04,1.08),M.insul,(X1+X2)/2,1.9,0,chamber);
+mk(box(.04,1.3,1.08),M.body,X1+.02,1.25,0,chamber);
+const rightWall=mk(box(.04,1.3,1.08),M.body,X2-.02,1.25,0,chamber);
+const CX=(X1+X2)/2;
+const doorL=mk(box((X2-X1)/2-.02,1.26,.008),M.glass,CX-(X2-X1)/4,1.25,ZF,chamber);doorL.castShadow=false;
+const doorR=mk(box((X2-X1)/2-.02,1.26,.008),M.glass,CX+(X2-X1)/4,1.25,ZF,chamber);doorR.castShadow=false;
+cutaway.push(doorL,doorR);
+mk(box(.02,1.28,.03),M.alu,CX,1.25,ZF,chamber);
+[-.06,.06].forEach(d=>mk(box(.02,.22,.03),M.dark,CX+d,1.25,ZF+.03,chamber));
+const chim=mk(cyl(.07,.6,20),M.alu,CX+.35,2.15,-.42,chamber);mk(new THREE.ConeGeometry(.12,.08,20),M.alu,CX+.35,2.49,-.42,chamber);
+const dividers=[.97,1.35].map(y=>mk(box(X2-X1-.06,.012,.88),M.steel,CX,y,-.02,chamber));
+const zoneY=[[.68,.84],[1.06,1.22],[1.44,1.62]];
+zoneY.flat().forEach(y=>{mk(box(1.08,.006,.82),M.meshTray,CX,y,-.02,chamber);mk(box(1.1,.02,.02),M.alu,CX,y,.39,chamber);mk(box(1.1,.02,.02),M.alu,CX,y,-.43,chamber)});
+const heaters=[];for(let i=0;i<3;i++){const h=mk(cyl(.008,1.0,8),heaterMat,CX,.64,-.46+i*.03,chamber);h.rotation.z=Math.PI/2;heaters.push(h)}
+const heaterLight=new THREE.PointLight(0xff5a20,0,1.8);heaterLight.position.set(CX,.7,-.3);chamber.add(heaterLight);
+const sliceGeo=new THREE.CylinderGeometry(.036,.036,.012,14);
+const sliceMats=[0,1,2].map(()=>std(0xd8352a,0,.5));
+const slices=zoneY.map((ys,z)=>{const im=new THREE.InstancedMesh(sliceGeo,sliceMats[z],48);im.castShadow=true;im.receiveShadow=true;chamber.add(im);const base=[];ys.forEach(y=>{for(let i=0;i<6;i++)for(let j=0;j<4;j++)base.push({x:CX-.45+i*.18+(Math.random()-.5)*.02,y:y+.01,z:-.3+j*.18+(Math.random()-.5)*.02,r:Math.random()*6})});im.userData.base=base;return im});
+
+/* wax heat wall */
+const pcm=part("pcm",[0,.1,-1.0]);
+const PZ0=-.53,PZ1=-.4;
+mk(box(X2-X1,.04,.16),M.insul,CX,1.86,(PZ0+PZ1)/2,pcm);
+const pcmBack=mk(box(X2-X1,1.28,.03),M.body,CX,1.25,ZB,pcm);cutaway.push(pcmBack);
+const pcmFace=mk(box(X2-X1-.06,1.2,.02),M.bodyDark,CX,1.25,PZ1+.01,pcm);
+const waxMat=std(0xf0eadb,0,.75,{transparent:true,opacity:.97,emissive:lin(0xff9a2a),emissiveIntensity:0});
+const tubes=[];
+for(let r=0;r<2;r++)for(let i=0;i<10;i++)tubes.push(mk(cyl(.028,1.12,14),waxMat,X1+.1+i*.115,1.25,PZ0+.04+r*.06,pcm));
+for(let k=0;k<4;k++)mk(box(X2-X1-.08,.005,.12),M.alu,CX,.75+k*.33,(PZ0+PZ1)/2,pcm);
+
+/* fans */
+const fans=part("fans",[0,0,-.55]);
+const rotors=[];
+zoneY.forEach(ys=>{const y=(ys[0]+ys[1])/2+.02;const g=new THREE.Group();g.position.set(CX,y,PZ1+.03);fans.add(g);
+ mk(new THREE.TorusGeometry(.07,.01,8,28),M.dark,0,0,0,g);const r=new THREE.Group();g.add(r);
+ mk(cyl(.018,.02,12),M.dark,0,0,0,r).rotation.x=Math.PI/2;
+ for(let k=0;k<5;k++){const p=new THREE.Group();p.rotation.z=k*Math.PI*2/5;r.add(p);const b=mk(box(.014,.06,.004),M.steel,0,.034,0,p);b.rotation.y=.5}
+ rotors.push(r)});
+
+/* agitator */
+const agitator=part("agitator",[0,.25,.9]);
+const rakes=zoneY.map(ys=>{const g=new THREE.Group();g.position.set(CX,ys[1]+.045,-.02);agitator.add(g);mk(box(.02,.03,.8),M.alu,0,0,0,g);for(let k=0;k<8;k++)mk(box(.006,.03,.006),M.steel,0,-.025,-.36+k*.103,g);return g});
+mk(box(.06,1.1,.06),M.dark,X2-.06,1.25,-.47,agitator);mk(box(.09,.09,.09),M.dark,X2-.06,1.85,-.47,agitator);
+
+/* sensors */
+const sensors=part("sensors",[.0,.0,.7]);
+const sensLeds=[];
+zoneY.forEach(ys=>{const y=(ys[0]+ys[1])/2;mk(box(.02,.04,.06),M.white,X2-.05,y,.1,sensors);sensLeds.push(mk(new THREE.SphereGeometry(.006,8,6),ledMat,X2-.062,y+.01,.12,sensors));
+ [CX-.5,CX+.5].forEach(x=>[-.36,.32].forEach(z=>mk(box(.04,.012,.025),M.dark,x,ys[0]-.012,z,sensors)))});
+
+/* ai unit */
+const ai=part("ai",[0,-.05,1.4]);
+mk(box(.18,.07,.12),M.dark,-.55,.3,-.3,ai);mk(cyl(.022,.008,14),M.steel,-.55,.338,-.3,ai);
+const aiLed=mk(new THREE.SphereGeometry(.007,8,6),new THREE.MeshBasicMaterial({color:0xb07cff}),-.47,.31,-.24,ai);
+
+/* roof collector */
+const collector=part("collector",[0,.9,0]);
+const roofG=new THREE.Group();roofG.position.set((X1+X3)/2,2.05,0);roofG.rotation.x=SLOPE;collector.add(roofG);
+const RL=X3-X1,RD=1.2;
+mk(box(RL+.06,.1,RD+.06),M.alu,0,0,0,roofG);
+mk(box(RL,.012,RD),M.absorber,0,.046,0,roofG);
+for(let i=0;i<14;i++)mk(box(.01,.016,RD-.04),M.fin,-RL/2+(i+.5)*RL/14,.058,0,roofG);
+const rg=mk(box(RL,.006,RD),M.glass,0,.074,0,roofG);rg.castShadow=false;
+mk(box(RL,.06,.04),M.dark,0,-.03,RD/2+.03,roofG);
+
+/* pv strip */
+const pv=part("pv",[-.3,.9,0]);
+const pvG=new THREE.Group();pvG.position.set((X0+X1)/2,2.05,0);pvG.rotation.x=SLOPE;pv.add(pvG);
+mk(box(X1-X0+.04,.06,RD+.06),M.alu,0,0,0,pvG);mk(box(X1-X0-.02,.005,RD),M.pv,0,.033,0,pvG);
+for(let i=1;i<4;i++)mk(box(.003,.002,RD),M.alu,-(X1-X0)/2+i*(X1-X0)/4,.037,0,pvG);
+for(let i=1;i<6;i++)mk(box(X1-X0-.02,.002,.003),M.alu,0,.037,-RD/2+i*RD/6,pvG);
+
+/* reflector wing */
+const wings=part("wings",[0,1.3,-.4]);
+const hinge=new THREE.Group();hinge.position.set((X1+X3)/2,roofY(-.6)+.1,-.6);wings.add(hinge);
+const wingG=new THREE.Group();hinge.add(wingG);
+mk(box(RL,.01,.78),M.mirror,0,.012,.39,wingG);mk(box(RL+.04,.03,.04),M.steel,0,0,.02,wingG);mk(box(RL+.04,.03,.04),M.steel,0,0,.78,wingG);
+[-RL/2,0,RL/2].forEach(x=>mk(box(.03,.03,.8),M.steel,x,-.008,.4,wingG));
+mk(box(.06,.06,.12),M.dark,X3-.05-(X1+X3)/2,-.02,-.02,hinge);
+mk(cyl(.015,RL,10),M.steel,0,0,0,hinge).rotation.z=Math.PI/2;
+let wingAng=SLOPE;
+
+/* processing bay: hopper + conveyor + vision */
+const conveyor=part("conveyor",[-.9,0,.3]);
+mk(box(.04,1.3,1.08),M.body,X0+.02,1.25,0,conveyor);
+mk(box(X1-X0,1.3,.03),M.body,(X0+X1)/2,1.25,ZB+.02,conveyor);
+const bayFront=mk(box(X1-X0,.38,.03),M.body,(X0+X1)/2,.78,ZF,conveyor);
+const hop=mk(new THREE.CylinderGeometry(.24,.08,.32,4,1,true),std(0xb8bfc4,.7,.35,{side:THREE.DoubleSide}),X0+.25,1.55,.05,conveyor);hop.rotation.y=Math.PI/4;
+mk(box(.62,.02,.3),M.rubber,(X0+X1)/2+.02,1.06,.05,conveyor);
+[-.3,.33].forEach(d=>mk(box(.66,.04,.025),M.alu,(X0+X1)/2+.02,1.07,.05+(d>0?.17:-.17),conveyor));
+const rollers=[X0+.1,X1-.06].map(x=>{const r=mk(cyl(.035,.3,14),M.steel,x,1.06,.05,conveyor);r.rotation.x=Math.PI/2;return r});
+mk(box(.12,.1,.1),M.dark,X0+.1,.92,-.2,conveyor);
+const chute=mk(box(.18,.02,.34),M.steel,X1-.2,.9,.32,conveyor);chute.rotation.x=-.7;
+const rejectDrawer=mk(box(.4,.18,.03),M.body,(X0+X1)/2,.36,ZF+.02,conveyor);
+mk(box(.12,.02,.02),M.dark,(X0+X1)/2,.4,ZF+.045,conveyor);
+mk(box(.2,.02,.6),M.steel,X1-.1,1.06,-.05,conveyor);
+const flapPivot=new THREE.Group();flapPivot.position.set(X1-.32,1.1,-.1);conveyor.add(flapPivot);mk(box(.02,.05,.2),M.alu,0,0,.1,flapPivot);
+const tomGeo=new THREE.SphereGeometry(.04,16,12);
+const goodM=std(0xd23a26,0,.35),badM=std(0x7f9b3a,0,.5);
+const items=[];for(let i=0;i<6;i++){const bad=i%3===1;const m=mk(tomGeo,bad?badM:goodM,0,1.1,0,conveyor);m.scale.y=.85;items.push({m,bad,ph:i/6})}
+const camera3=part("camera",[-.9,.5,.3]);
+mk(box(.3,.2,.34),M.dark,(X0+X1)/2+.05,1.24,.05,camera3);
+const lp=mk(box(.26,.01,.3),lightPanel,(X0+X1)/2+.05,1.135,.05,camera3);lp.castShadow=false;
+mk(cyl(.02,.03,14),M.white,(X0+X1)/2+.05,1.36,.05,camera3);
+
+/* storage bay */
+const storage=part("storage",[.9,0,.3]);
+mk(box(.04,1.3,1.08),M.body,X3-.02,1.25,0,storage);
+mk(box(X3-X2,1.3,.03),M.body,(X2+X3)/2,1.25,ZB+.02,storage);
+mk(box(X3-X2,.04,1.08),M.insul,(X2+X3)/2,1.9,0,storage);
+const riskLeds=[];
+for(let i=0;i<4;i++){const y=.76+i*.3;
+ mk(box(X3-X2-.12,.24,.9),M.bin,(X2+X3)/2,y,-.02,storage);
+ mk(cyl(.03,.015,14),M.white,(X2+X3)/2,y+.127,-.02,storage);
+ const f=mk(box(X3-X2-.04,.27,.03),M.body,(X2+X3)/2,y,ZF,storage);cutaway.push(f);
+ const hnd=mk(box(.2,.02,.02),M.dark,(X2+X3)/2,y+.06,ZF+.03,storage);cutaway.push(hnd);
+ const l=mk(new THREE.SphereGeometry(.009,8,6),new THREE.MeshBasicMaterial({color:0x3be07f}),X3-.12,y+.08,ZF+.02,storage);riskLeds.push(l)}
+
+/* airflow particles */
+const airCurve=new THREE.CatmullRomCurve3([
+ new THREE.Vector3(.4,1.98,.66),new THREE.Vector3(.4,2.02,.3),new THREE.Vector3(.3,2.07,-.1),new THREE.Vector3(.1,2.12,-.45),
+ new THREE.Vector3(CX,1.95,-.47),new THREE.Vector3(CX,1.4,-.47),new THREE.Vector3(CX,.8,-.47),
+ new THREE.Vector3(CX-.2,.76,-.2),new THREE.Vector3(CX-.1,.78,.3),new THREE.Vector3(CX+.25,1.0,.32),new THREE.Vector3(CX+.2,1.16,-.1),
+ new THREE.Vector3(CX-.2,1.18,-.3),new THREE.Vector3(CX-.3,1.4,0),new THREE.Vector3(CX,1.56,.3),new THREE.Vector3(CX+.3,1.72,0),
+ new THREE.Vector3(CX+.35,1.85,-.4),new THREE.Vector3(CX+.35,2.6,-.42)]);
+const NP=240,pGeo=new THREE.BufferGeometry(),pPos=new Float32Array(NP*3),pCol=new Float32Array(NP*3),pOff=[],pJit=[];
+for(let i=0;i<NP;i++){pOff.push(Math.random());pJit.push([(Math.random()-.5)*.5,(Math.random()-.5)*.05,(Math.random()-.5)*.12])}
+pGeo.setAttribute("position",new THREE.BufferAttribute(pPos,3));pGeo.setAttribute("color",new THREE.BufferAttribute(pCol,3));
+const pMat=new THREE.PointsMaterial({size:.04,vertexColors:true,transparent:true,opacity:.85,depthWrite:false});
+const airPts=new THREE.Points(pGeo,pMat);scene.add(airPts);
+const cCool=new THREE.Color(0x7fc4ff),cWarm=new THREE.Color(0xffb347),cHot=new THREE.Color(0xff4a2a),cWet=new THREE.Color(0xbfd6e0);
+
+/* labels */
+const LAB=[["collector","ME1","Roof collector",[.6,2.35,.2]],["wings","ME1","Reflector wing",[.9,2.55,-.6]],["pcm","ME1","Wax heat wall",[CX-.4,1.95,-.5]],["chamber","ME2","Chamber",[CX-.3,1.75,.56]],["fans","ME2","Zone fans",[CX,1.15,-.4]],["agitator","ME3","Agitator",[X2-.06,1.95,-.47]],["sensors","MEE1","Moisture sensing",[X2-.05,1.0,.1]],["control","MEE2","Tech bay + screen",[X2,1.42,.6]],["ai","MEE3","AI unit",[-.55,.42,.0]],["camera","MEE4","Vision hood",[(X0+X1)/2,1.45,.2]],["conveyor","MEE5","Hopper + sorting",[X0+.25,1.78,.05]],["storage","MEE6","Storage drawers",[(X2+X3)/2,1.98,.4]],["pv","MEE2","PV roof",[(X0+X1)/2,2.25,.4]]];
+const labEls=LAB.map(([k,o,t,a])=>{const b=document.createElement("button");b.className="lab";b.innerHTML="<b>"+o+"</b>"+t;b.addEventListener("click",()=>select(k,true));$("#labels").appendChild(b);return{k,el:b,a:new THREE.Vector3(...a)}});
+const jump=$("#jump");Object.keys(INFO).forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=INFO[k].n;jump.appendChild(o)});
+jump.addEventListener("change",()=>{if(jump.value)select(jump.value,true)});
+
+/* selection */
+let selKey=null,selHelper=null,focusTo=null;
+function select(k,fly){
+ selKey=k;const I=INFO[k];
+ $("#iOwn").textContent=I.o;$("#iName").textContent=I.n;$("#iDoes").textContent=I.d;$("#iParts").textContent=I.p;$("#iBuild").textContent=I.b;$("#iMetric").textContent=I.m;
+ $("#info").classList.add("open");
+ if(selHelper){scene.remove(selHelper);selHelper=null}
+ selHelper=new THREE.Box3Helper(new THREE.Box3(),new THREE.Color(0xffb020));scene.add(selHelper);
+ if(fly){const b=new THREE.Box3().setFromObject(parts[k]);focusTo=b.getCenter(new THREE.Vector3())}
+}
+function deselect(){selKey=null;$("#info").classList.remove("open");if(selHelper){scene.remove(selHelper);selHelper=null}jump.value=""}
+$("#infoClose").addEventListener("click",deselect);
+document.addEventListener("keydown",e=>{if(e.key==="Escape")deselect()});
+const ray=new THREE.Raycaster(),mv=new THREE.Vector2();let downAt=null;
+renderer.domElement.addEventListener("pointerdown",e=>{downAt=[e.clientX,e.clientY];$("#hint").style.opacity=0});
+renderer.domElement.addEventListener("pointerup",e=>{if(!downAt)return;const d=Math.hypot(e.clientX-downAt[0],e.clientY-downAt[1]);downAt=null;if(d>6)return;
+ const r=renderer.domElement.getBoundingClientRect();mv.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(mv,camera);
+ const hits=ray.intersectObjects(Object.values(parts),true);
+ for(const h of hits){if(!h.object.visible)continue;let o=h.object;while(o&&!(o.userData&&o.userData.key))o=o.parent;if(o){select(o.userData.key,false);return}}
+ deselect()});
+
+/* ui wiring */
+function syncUI(){
+ document.querySelectorAll(".seg").forEach(s=>{const k=s.dataset.key;s.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(String(cfg[k])===b.dataset.v)))});
+ document.querySelectorAll("input[type=checkbox][data-key]").forEach(i=>i.checked=!!cfg[i.dataset.key]);
+ $("#pcmR").value=cfg.pcm;$("#pcmO").textContent=cfg.pcm?cfg.pcm+" kg":"None";
+ $("#batchR").value=cfg.batch;$("#batchO").textContent=cfg.batch+" kg";
+}
+document.querySelectorAll(".seg").forEach(s=>s.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const k=s.dataset.key;const v=b.dataset.v;cfg[k]=isNaN(+v)?v:+v;changed(k)}));
+document.querySelectorAll("input[type=checkbox][data-key]").forEach(i=>i.addEventListener("change",()=>{cfg[i.dataset.key]=i.checked;changed(i.dataset.key)}));
+document.querySelectorAll("input[type=range][data-key]").forEach(i=>i.addEventListener("input",()=>{cfg[i.dataset.key]=+i.value;changed(i.dataset.key)}));
+let sim=null,live=null;
+function changed(k){live=null;syncUI();applyVisibility();recalc()}
+function applyVisibility(){
+ const nt=Math.round(20*cfg.pcm/40);tubes.forEach((t,i)=>t.visible=i<nt);
+ dividers.forEach(d=>d.visible=cfg.zones===3);
+ rotors.forEach((r,i)=>r.parent.visible=cfg.zones===3||i===0);
+ rakes.forEach(r=>r.visible=cfg.agitator);
+ ai.visible=cfg.control==="ai";
+ wings.visible=cfg.wings;
+ cutaway.forEach(m=>m.visible=!cfg.cutaway);
+ airPts.visible=cfg.airflow;
+ $("#labels").style.display=cfg.labels?"":"none";
+}
+function recalc(){
+ sim=simulate();
+ $("#rTime").textContent=sim.done?fmtH(sim.hours):"14+ days";
+ $("#rTimeLbl").textContent="to dry "+cfg.batch+" kg of sliced tomatoes, every tray done";
+ $("#rNight").textContent=sim.night>0?sim.night.toFixed(1)+" h":"None";
+ $("#rBack").textContent=cfg.backup?sim.back.toFixed(1)+" kWh":"Off";
+ const f=zoneFactors();$("#rEven").textContent=Math.round(Math.min(...f)/Math.max(...f)*100)+"%";
+ $("#rSolar").textContent=Math.round(sim.share*100)+"%";
+ const c=buildCost();$("#rCost").textContent=naira(c*.85)+" to "+naira(c*1.2);
+ applyWeather();
+}
+
+/* time + batch */
+let hour=13,playing=false,running=false,elapsed=0,prog=[0,0,0],runSt={stored:0},tA=0;
+const timeR=$("#time");
+timeR.addEventListener("input",()=>{hour=+timeR.value;playing=false;$("#play").textContent="▶";live=null});
+$("#play").addEventListener("click",()=>{if(running)return;playing=!playing;$("#play").textContent=playing?"❚❚":"▶";$("#play").setAttribute("aria-label",playing?"Pause the day":"Play the day")});
+$("#run").addEventListener("click",()=>{if(running){running=false;$("#run").textContent="Run a batch";$("#status").textContent="Paused at "+fmtH(elapsed);return}
+ if(Math.min(...prog)>=1){prog=[0,0,0];elapsed=0;runSt={stored:0}}
+ if(elapsed===0){hour=8;runSt={stored:0}}
+ running=true;playing=false;$("#play").textContent="▶";$("#run").textContent="Pause batch";$("#status").textContent="Drying… loaded at 08:00"});
+$("#reset").addEventListener("click",()=>{running=false;prog=[0,0,0];elapsed=0;runSt={stored:0};$("#run").textContent="Run a batch";$("#status").textContent="";updateBars()});
+function updateBars(){for(let z=0;z<3;z++){const p=Math.min(1,prog[z]);$("#b"+z).style.width=(p*100)+"%";$("#p"+z).textContent=Math.round(p*100)+"%"}}
+const fmtClock=h=>{const hh=Math.floor(h)%24,mm=Math.round((h-Math.floor(h))*60)%60;return String(hh).padStart(2,"0")+":"+String(mm).padStart(2,"0")};
+
+/* weather + lighting */
+const skyNight=new THREE.Color(0x0e1828),skyDay=new THREE.Color(),tmpC=new THREE.Color(),dusk=new THREE.Color(0xf0a070);
+function applyWeather(){skyDay.setHex(WX[cfg.weather].sky);sun.color.setHex(WX[cfg.weather].sunCol)}
+function updateSky(h,G){
+ const w=WX[cfg.weather];const a=(h-6)/12*Math.PI;const day=Math.max(0,Math.sin(a));
+ sun.position.set(Math.cos(a)*18,Math.max(.5,Math.sin(a)*18),5);
+ sunDisc.position.set(Math.cos(a)*60,Math.sin(a)*60,22);sunDisc.visible=day>.02&&cfg.weather!=="rainy";
+ sunDisc.material.color.setHex(cfg.weather==="harmattan"?0xffd9a0:0xfff3c8);
+ const k=Math.min(1,day*2.2);
+ sun.intensity=(G/700)*2.1+.02;sun.castShadow=day>.05;
+ hemi.intensity=.12+.55*k*(cfg.weather==="rainy"?.85:1);
+ tmpC.copy(skyNight).lerp(skyDay,k);
+ if(h>5.5&&h<7.5||h>16.5&&h<18.5){const t=1-Math.min(Math.abs(h-6.5),Math.abs(h-17.5));tmpC.lerp(dusk,Math.max(0,t)*.35*(cfg.weather==="rainy"?.3:1))}
+ scene.background=tmpC.clone();scene.fog.color.copy(tmpC).convertSRGBToLinear();scene.fog.density=w.fog*(k<.3?.6:1);
+ renderer.toneMappingExposure=.7+.25*k;
+}
+function resize(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
+new ResizeObserver(resize).observe(stage);resize();
+
+/* animate */
+const fresh=new THREE.Color(0xd8352a).convertSRGBToLinear(),dried=new THREE.Color(0x6e2414).convertSRGBToLinear();
+const waxSolid=new THREE.Color(0xf0eadb).convertSRGBToLinear(),waxLiquid=new THREE.Color(0xe2a23c).convertSRGBToLinear();
+const m4=new THREE.Matrix4(),q=new THREE.Quaternion(),e3=new THREE.Euler(),v3=new THREE.Vector3(),s3=new THREE.Vector3(),pv3=new THREE.Vector3();
+let last=performance.now();
+function frame(now){
+ const dt=Math.min(.05,(now-last)/1000);last=now;tA+=dt;
+ let r=null;
+ if(running){
+  let rem=dt*4;const f=zoneFactors(),N=need();
+  while(rem>1e-6){const s=Math.min(rem,.25);const h=(8+elapsed)%24;r=step(h,runSt,s);for(let z=0;z<3;z++)prog[z]=Math.max(0,Math.min(1.05,prog[z]+r.useful*s/N*f[z]));elapsed+=s;rem-=s}
+  if(!r)r=liveAt(hour);
+  hour=(8+elapsed)%24;live=r;updateBars();
+  if(Math.min(...prog)>=1){running=false;$("#run").textContent="Run again";$("#status").textContent="Batch done in "+fmtH(elapsed)+". Every tray reached target moisture."}
+ }else{
+  if(playing){hour=(hour+dt*1.2)%24;live=null}
+  if(!live)live=liveAt(hour);
+  r=live;
+ }
+ timeR.value=hour;$("#clock").textContent=fmtClock(hour);
+ $("#nSun").textContent=Math.round(r.G)+" W/m²";
+ $("#nTemp").textContent=Math.round(r.T)+" °C";
+ $("#nWax").textContent=cfg.pcm?Math.round(r.melt*100)+"%":"None";
+ $("#nSrc").textContent=r.backup>0&&r.dis<.05&&r.supply<.3?"Backup":r.dis>.05?"Wax wall":r.charge>.05?"Sun, storing":r.supply>.05?"Sun":"Off";
+ updateSky(hour,r.G);
+
+ const ex=cfg.exploded?1:0;
+ Object.values(parts).forEach(g=>{v3.copy(g.userData.base).addScaledVector(g.userData.ex,ex);g.position.lerp(v3,.12)});
+
+ const open=wingOpenAt(r.G);
+ const a=(hour-6)/12*Math.PI;
+ const target=open?-1.75-.15*Math.sin(a):SLOPE;
+ wingAng+=(target-wingAng)*.05;wingG.rotation.x=wingAng;
+
+ const melt=r.melt||0;waxMat.color.copy(waxSolid).lerp(waxLiquid,melt);waxMat.opacity=.97-.25*melt;waxMat.emissiveIntensity=melt*.18;
+ const hb=r.backup>0?1:0;heaterMat.emissiveIntensity+=((hb*1.6)-heaterMat.emissiveIntensity)*.1;heaterLight.intensity=heaterMat.emissiveIntensity*.9;
+ const fs=Math.min(1,r.toCh/1.2);rotors.forEach((ro,i)=>ro.rotation.z+=dt*(4+30*fs)*(cfg.control==="ai"?(1+.15*Math.sin(tA*.7+i)):1));
+ rakes.forEach((g,z)=>{g.position.x=CX+(cfg.agitator?.48*Math.sin(tA*.6+z*1.3):.52)});
+ slices.forEach((im,z)=>{const p=Math.min(1,prog[z]);sliceMats[z].color.copy(fresh).lerp(dried,p);sliceMats[z].roughness=.45+.4*p;const sc=1-.42*p;
+  im.userData.base.forEach((b,i)=>{e3.set(0,b.r+(cfg.agitator?Math.sin(tA*.6+z)*.4:0),0);q.setFromEuler(e3);v3.set(b.x+(cfg.agitator?Math.sin(tA*.6+z*1.3+i)*.004:0),b.y,b.z);s3.set(sc,1-.35*p,sc);m4.compose(v3,q,s3);im.setMatrixAt(i,m4)});im.instanceMatrix.needsUpdate=true});
+
+ ctlLeds[1].visible=Math.sin(tA*6)>0;ctlLeds[2].visible=Math.sin(tA*3.1)>0;aiLed.visible=Math.sin(tA*9)>-.2;
+ sensLeds.forEach((l,i)=>l.visible=Math.sin(tA*2+i)>0);riskLeds.forEach((l,i)=>l.visible=Math.sin(tA*1.5+i)>-.6);
+ screenMat.color.setHex(Math.sin(tA*1.2)>0?0x1f6f8b:0x25809e);
+
+ rollers.forEach(ro=>ro.rotation.y+=dt*4);
+ let flapT=0;const bx0=X0+.22,bx1=X1-.05;
+ items.forEach(it=>{const u=(tA*.12+it.ph)%1;let x,y=1.11,z=.05;
+  if(u<.12){x=X0+.25;y=1.5-(u/.12)*.39}
+  else{const k=(u-.12)/.88;x=bx0+k*(bx1-bx0);
+   if(it.bad&&x>X1-.32){const t=Math.min(1,(x-(X1-.32))/.12);z=.05+.28*t;x=X1-.32+(x-(X1-.32))*.3;y=1.11-.5*Math.max(0,t-.5);flapT=Math.max(flapT,1-Math.abs(t-.4)*2)}
+  }
+  it.m.position.set(x,Math.max(.62,y),z)});
+ flapPivot.rotation.y=Math.max(0,flapT)*1.1;
+ const under=items.some(it=>Math.abs(it.m.position.x-((X0+X1)/2+.05))<.05&&it.m.position.y>1.05);
+ lightPanel.emissiveIntensity+=((under?1.6:.4)-lightPanel.emissiveIntensity)*.3;
+
+ if(cfg.airflow){const sp=.02+.11*Math.min(1,r.toCh/1.2),intensity=Math.min(1,.25+r.toCh/1.2);
+  for(let i=0;i<NP;i++){pOff[i]=(pOff[i]+dt*sp)%1;const t=pOff[i];
+   airCurve.getPointAt(Math.min(.995,Math.max(0,t)),pv3);const j=pJit[i];
+   const spread=t<.25?1.6:t<.4?.9:.8;
+   pPos[i*3]=pv3.x+j[0]*spread;pPos[i*3+1]=pv3.y+j[1];pPos[i*3+2]=pv3.z+j[2];
+   if(t<.25)tmpC.copy(cCool).lerp(cWarm,t/.25*intensity);else if(t<.42)tmpC.copy(cWarm).lerp(cHot,intensity*.9);else if(t<.9)tmpC.copy(cHot).lerp(cWarm,(t-.42)/.48).lerp(cCool,(1-intensity)*.5);else tmpC.copy(cWarm).lerp(cWet,(t-.9)/.1);
+   pCol[i*3]=tmpC.r;pCol[i*3+1]=tmpC.g;pCol[i*3+2]=tmpC.b}
+  pGeo.attributes.position.needsUpdate=true;pGeo.attributes.color.needsUpdate=true;pMat.opacity=.35+.55*intensity}
+
+ if(selHelper&&selKey)selHelper.box.setFromObject(parts[selKey]);
+ if(focusTo){controls.target.lerp(focusTo,.08);if(controls.target.distanceTo(focusTo)<.01)focusTo=null}
+ controls.update();
+ renderer.render(scene,camera);
+ if(cfg.labels){const W=stage.clientWidth,H=stage.clientHeight;labEls.forEach(L=>{const g=parts[L.k];if(!g.visible){L.el.style.display="none";return}
+  pv3.copy(L.a).add(g.position);pv3.project(camera);if(pv3.z>1||Math.abs(pv3.x)>1.1||Math.abs(pv3.y)>1.1){L.el.style.display="none";return}
+  L.el.style.display="";L.el.style.left=((pv3.x+1)/2*W)+"px";L.el.style.top=((1-pv3.y)/2*H)+"px"})}
+ requestAnimationFrame(frame);
+}
+syncUI();applyVisibility();recalc();updateBars();
+requestAnimationFrame(frame);
+setTimeout(()=>{$("#hint").style.opacity=0},7000);
+})();
+</script>
+</body>
+</html>

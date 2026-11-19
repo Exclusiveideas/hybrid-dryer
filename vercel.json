@@ -2,7 +2,15 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "redirects": [
-    { "source": "/v1", "destination": "/dryer/v1/prototype", "permanent": false },
-    { "source": "/v2", "destination": "/dryer", "permanent": false }
+    {
+      "source": "/v1",
+      "destination": "/dryer/v1/prototype",
+      "permanent": false
+    },
+    {
+      "source": "/v2",
+      "destination": "/dryer/v2/prototype",
+      "permanent": false
+    }
   ]
 }
