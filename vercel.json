@@ -11,6 +11,11 @@
       "source": "/v2",
       "destination": "/dryer/v2/prototype",
       "permanent": false
+    },
+    {
+      "source": "/v3",
+      "destination": "/dryer/v3/prototype",
+      "permanent": false
     }
   ]
 }

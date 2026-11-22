@@ -1,0 +1,71 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/site.css"><title>Version 3, hybrid solar dryer</title></head><body><main>
+<div class="crumb"><a href="/">Projects</a> / <a href="/dryer">Hybrid solar dryer</a> / Version 3</div>
+<h1>Version 3: solar canopy machine</h1>
+<p class="lede">Tip in crates of fresh produce; take out dried, sorted product. One machine on wheels with a clip-on wash module and a solar canopy roof. About 4.4 × 1.8 m and 2.6 m tall.</p>
+<a class="cta" href="/dryer/v3/prototype">Open the 3D prototype</a>
+
+<h2>What it does, in one line</h2>
+<div class="box">Wash, sort, cut, dry and store up to six kinds of produce at once, each at its own temperature, heated only by the sun. No generator, no fuel.</div>
+
+<h2>How it works</h2>
+<ol class="steps">
+ <li><b>Wash</b>The farmer tips a crate into a shallow water tank. A paddle pushes produce onto a brushing belt under water sprays, then a fan blows off the water.</li>
+ <li><b>Line up and look</b>A vibrating channel lines pieces up under a camera. The camera names each piece and checks its quality.</li>
+ <li><b>Sort</b>Gates send damaged pieces to the reject bin. If there’s no free tray for a produce, it goes to the overflow bin for the next batch.</li>
+ <li><b>Cut</b>A spinning blade slices or halves each piece as its recipe says. Leaves and small peppers skip this.</li>
+ <li><b>Load</b>A lift carries each piece to its tray. Trays are slow moving belts, so pieces land in an even single layer.</li>
+ <li><b>Catch the sun</b>The sloped canopy roof is the heater: half is glass vacuum tubes, half is a black zig-zag sheet under clear glazing that air passes over twice. Both work on hazy days too. The canopy also shades the doors and keeps off rain. Hot air flows down into a wall of wax tubes that store heat for the night.</li>
+ <li><b>Dry</b>Three zones, each at its own temperature. Belts jog under a fixed comb to turn the pieces. Sensors weigh every tray. The AI sends warm air round again while it’s still dry and vents it when it’s humid. At night a silica gel bed keeps drying the air with no heat at all; the next day’s sun dries the gel again.</li>
+ <li><b>Unload</b>When a tray is dry, its belt runs forward and the product falls into a chute, then a second lift drops it into its own drawer.</li>
+ <li><b>Store</b>Six sealed drawers watch humidity and CO₂. The operator bags product when the screen says a drawer is full.</li>
+</ol>
+
+<h2>What the operator does</h2>
+<ul class="plan">
+ <li>Tip crates into the wash tank.</li>
+ <li>Empty the reject bin; put overflow back in next batch.</li>
+ <li>Drain and refill wash water daily.</li>
+ <li>Bag full drawers; clean weekly.</li>
+</ul>
+
+<h2>Produce it handles</h2>
+<p>Only produce that needs no peeling, so everything stays automatic. A zone holds one temperature group; each of its two trays can hold a different produce from that group.</p>
+<table>
+ <tr><th>Group</th><th>Temperature</th><th>Produce</th></tr>
+ <tr><td>Leaves</td><td>about 40–45 °C</td><td>Moringa, ugwu, scent leaf, bitter leaf, ewedu, tete, uziza</td></tr>
+ <tr><td>Vegetables</td><td>about 50–58 °C</td><td>Tomato, tatashe, rodo, okra, garden egg, carrot, zobo, ginger, mushroom</td></tr>
+ <tr><td>Starchy chips</td><td>about 65 °C</td><td>Sweet potato, Irish potato (skin on)</td></tr>
+</table>
+<p class="note">Temperatures are starting points to confirm in tests. Yam, plantain and cassava are left out because they need peeling. Onion, garlic and fish are left out because their smell taints other produce.</p>
+
+<h2>Who builds what</h2>
+<table>
+ <tr><th>Code</th><th>Name</th><th>Area</th></tr>
+ <tr><td>ME1</td><td>Jamiat Opeyemi Akande</td><td>Roof collector, evacuated tubes, wax heat wall</td></tr>
+ <tr><td>ME2</td><td>Obaloluwa Vincent Ayeni</td><td>Three-zone chamber, fans, silica gel bed, recirculation, airflow (CFD)</td></tr>
+ <tr><td>ME3</td><td>Beloved Oyebode Adeoye</td><td>Belt trays and comb</td></tr>
+ <tr><td>MEE1</td><td>Emmanuel Adesope Arasanyin</td><td>Moisture sensing per tray</td></tr>
+ <tr><td>MEE2</td><td>Mayowa Samuel Elegbede</td><td>Controllers, motors, power, safety, touchscreen</td></tr>
+ <tr><td>MEE3</td><td>Oluwatoyin Muftaudeen Jimoh</td><td>AI control, recipes and routing</td></tr>
+ <tr><td>MEE4</td><td>Olatunde Akolade Salako</td><td>Vision: produce type and quality</td></tr>
+ <tr><td>MEE5</td><td>Praise Timilehin Olumuyiwa</td><td>Wash module, gates, cutter, lifts and chutes</td></tr>
+ <tr><td>MEE6</td><td>Babatunde Muhibudeen Raji</td><td>Smart storage drawers and dashboard</td></tr>
+</table>
+
+<h2>Using the 3D model</h2>
+<ul class="plan">
+ <li>Pick today’s crates on the left, then press “Run a batch” and watch produce travel through every step.</li>
+ <li>Turn on “Cutaway” to see inside. Pick a part or a person to zoom in, then “Pull out a copy” to see it alone in front of the machine.</li>
+</ul>
+
+<h2>What changed from version 2</h2>
+<table>
+ <tr><th></th><th>Version 2</th><th>Version 3</th></tr>
+ <tr><td>Solar heat</td><td>Sun-tracking mirror dish (direct sun only)</td><td>Canopy roof: double-pass collector plus evacuated tubes (works in haze)</td></tr>
+ <tr><td>Night drying</td><td>Wax heat, then sealed</td><td>Wax heat, then silica gel keeps drying</td></tr>
+ <tr><td>Airflow</td><td>Once-through</td><td>AI recirculates warm, dry air</td></tr>
+ <tr><td>Height</td><td>About 4.3 m with dish</td><td>About 2.6 m</td></tr>
+ <tr><td>Drying time, 12 kg (model)</td><td>Sunny ~2.6 days, harmattan ~10 days</td><td>Sunny ~19 h, harmattan ~29 h, rainy ~38 h</td></tr>
+</table>
+<p class="note">Numbers in the model are estimates for comparing options, not test results.</p>
+</main></body></html>
