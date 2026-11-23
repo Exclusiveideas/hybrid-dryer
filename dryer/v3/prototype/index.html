@@ -70,6 +70,7 @@ select{width:100%;font:inherit;padding:6px 8px;border-radius:8px;border:1px soli
 .bar i em{display:block;height:100%;width:0;background:var(--heat)}
 .bar .hot{color:var(--heat);font-weight:600}
 .chips{display:flex;flex-wrap:wrap;gap:5px}.chip{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:2px 9px;font:inherit;font-size:13px;cursor:pointer}.chip[aria-pressed="true"]{background:var(--btn);color:var(--btnInk);border-color:var(--btn)}.chipg{font-size:12px;color:var(--muted);margin:8px 0 4px}.bar.ztop{margin-top:8px}
+.legend{display:none;flex-wrap:wrap;gap:4px 10px;font-size:12px;margin:6px 0}.legend span::before{content:"";display:inline-block;width:14px;height:4px;border-radius:2px;background:var(--c);margin-right:5px;vertical-align:middle}
 .zsel{display:grid;grid-template-columns:64px 1fr;gap:6px 8px;align-items:center;margin:8px 0 4px;font-size:14px}
 .zsel select{padding:4px 6px}
 #nVisBox{grid-column:1/-1}
@@ -144,6 +145,11 @@ select{width:100%;font:inherit;padding:6px 8px;border-radius:8px;border:1px soli
    <div class="kv"><span>Quality check</span><b id="rQual">OK</b></div>
    <div class="kv"><span>Share of heat from sun</span><b id="rSolar">0</b></div>
    <div class="kv"><span>Rough build cost</span><b id="rCost">0</b></div>
+   <div class="kv"><span>Solar panel now</span><b id="eIn">0 W</b></div>
+   <div class="kv"><span>Electrical load now</span><b id="eOut">0 W</b></div>
+   <div class="kv"><span>Battery</span><b id="eSoc">80%</b></div>
+   <div class="kv"><span>Daily energy (this weather)</span><b id="eDay">0</b></div>
+   <div class="legend" id="legend"><span style="--c:#f08a24">Solar</span><span style="--c:#d63a2a">12 V power</span><span style="--c:#8a5cd6">Motors</span><span style="--c:#3a8fd6">Signals</span><span style="--c:#e8c020">E-stop</span></div>
    <div class="kv"><span>Overflow bin</span><b id="rOver">Empty</b></div>
    <div class="kv"><span>In storage drawers</span><b id="rStore">0 kg</b></div>
    <div class="kv"><span>Footprint</span><b>4.4 × 1.8 m, 2.6 m tall</b></div>
@@ -168,6 +174,11 @@ select{width:100%;font:inherit;padding:6px 8px;border-radius:8px;border:1px soli
    <div class="row"><span>Belt jog under comb</span><label class="tog"><input type="checkbox" data-key="agitator" aria-label="Belt jog under comb"><span></span></label></div>
   </div>
   <div class="grp">
+   <h3>Power <small>MEE2</small></h3>
+   <div class="row"><span>Solar panel</span><div class="seg" data-key="pvW"><button data-v="120">120 W</button><button data-v="300">300 W</button><button data-v="400">400 W</button></div></div>
+   <p class="note">Battery: 12 V 100 Ah lithium (about 1.15 kWh usable). Powers fans, motors and electronics only, never heating.</p>
+  </div>
+  <div class="grp">
    <h3>Today’s crates <small>MEE4 sorts them</small></h3>
    <div id="crate"></div>
    <p class="note" id="planNote"></p>
@@ -184,6 +195,7 @@ select{width:100%;font:inherit;padding:6px 8px;border-radius:8px;border:1px soli
   </div>
   <div class="grp">
    <h3>View</h3>
+   <div class="row"><div class="seg" data-key="emode" style="width:100%"><button data-v="phys" style="flex:1">Physical</button><button data-v="elec" style="flex:1">Electrical</button><button data-v="both" style="flex:1">Both</button></div></div>
    <div class="row"><span>Cutaway (open panels)</span><label class="tog"><input type="checkbox" data-key="cutaway" aria-label="Cutaway"><span></span></label></div>
    <div class="row"><span>Exploded view (whole machine)</span><label class="tog"><input type="checkbox" data-key="exploded" aria-label="Exploded view"><span></span></label></div>
    <div class="row"><span>Show airflow</span><label class="tog"><input type="checkbox" data-key="airflow" aria-label="Show airflow"><span></span></label></div>
@@ -200,7 +212,7 @@ select{width:100%;font:inherit;padding:6px 8px;border-radius:8px;border:1px soli
 (function(){
 "use strict";
 const $=s=>document.querySelector(s);
-const cfg={dish:0,tracking:true,roof:true,tubes:23,desiccant:true,recirc:true,pcm:30,zones:3,agitator:true,control:"ai",backup:false,weather:"sunny",batch:12,cutaway:false,exploded:false,airflow:true,labels:true};
+const cfg={emode:"phys",pvW:300,dish:0,tracking:true,roof:true,tubes:23,desiccant:true,recirc:true,pcm:30,zones:3,agitator:true,control:"ai",backup:false,weather:"sunny",batch:12,cutaway:false,exploded:false,airflow:true,labels:true};
 const WX={
  sunny:{peak:700,diff:.25,amb:30,sky:0x8fc3e6,fog:.004,sunCol:0xfff0d8},
  harmattan:{peak:500,diff:.6,amb:28,sky:0xcbbca2,fog:.04,sunCol:0xffe2b8},
@@ -217,12 +229,15 @@ const INFO={
  fans:{n:"Zone fans",o:"ME2 with MEE2",d:"One fan per zone in the heat wall pushes air across the trays; the controller sets each speed. When no heat is left at night, the dampers close and fans stop so the dry product doesn’t soak up humid night air.",p:"12 V brushless DC fans, servo dampers with gaskets",b:"Keep fan motors on the cool side of the duct.",m:"Air speed per zone"},
  agitator:{n:"Belt trays and comb",o:"ME3, robotic handling",d:"Each of the six trays is a slow mesh belt. Loading: pieces drop at one end while the belt creeps, giving an even layer. Drying: the belt jogs back and forth under a fixed comb to turn pieces. Unloading: the belt runs forward and product falls off the end.",p:"6 stainless or PTFE-coated mesh belts, rollers and tensioners, 6 small gear motors (or 3 with clutches), fixed combs",b:"PTFE-coated mesh helps sticky produce release. Keep motors outside the hot air.",m:"Layer evenness, moisture spread, product left on the belt"},
  sensors:{n:"Moisture sensing by sensor fusion",o:"MEE1, intelligent sensing",d:"Load cells under every belt tray plus humidity and temperature sensors in each zone estimate each tray’s moisture live, so two produce sharing a zone can finish at different times.",p:"24 load cells with HX711 boards, SHT31, DS18B20, airflow sensor",b:"Store a weight-to-moisture calibration per produce. Pause the belt jog briefly when weighing.",m:"Error against oven-dry samples"},
- control:{n:"Technical bay and touchscreen",o:"MEE2, embedded control",d:"The base holds battery, charge controller and main controller. A touchscreen on the pillar shows status and lets the operator start a batch.",p:"ESP32 controllers, relays and SSRs, 12 V battery, charge controller, thermal fuse, emergency stop, 7-inch touchscreen",b:"Keep all electronics in the base, away from heat and moisture, with a ventilated front panel.",m:"Fault tests passed, uptime"},
+ power:{n:"Power system",o:"MEE2, embedded control",d:"Solar panel → charge controller (MPPT) → 12 V lithium battery → fuse board → every load. Also the main controller, the touchscreen and the emergency stop, which cuts motor power through the safety line.",p:"300 W solar panel, 20 A MPPT charge controller, 12 V 100 Ah LiFePO4 battery, DC fuse/breaker board, ESP32 main controller, 7-inch touchscreen, latching E-stop",b:"Fuse every branch. Keep the battery and fuse board in the ventilated base, away from heat and water.",m:"Daily energy in and out, battery charge at dawn"},
+ nodes:{n:"Zone nodes and drivers",o:"MEE2, embedded control",d:"Small controllers near what they control: one node per zone reads that zone’s sensors and runs its fan and damper; motor drivers run the carriages and belts; a relay board switches the wash pump, vibrator, cutter, brushes and air knife.",p:"3 ESP32 zone nodes, 2 stepper or DC motor drivers, 6 small belt motor drivers, 8-channel relay board",b:"One node per zone keeps wiring short; all nodes talk to the main controller over one cable (RS485) or WiFi.",m:"Messages lost, response time"},
+ wiring:{n:"Wiring",o:"MEE2, embedded control",d:"Colors in the electrical view: orange = solar input, red = 12 V power, purple = motor power, blue = signals and data, yellow = emergency-stop safety line.",p:"Sized copper cable, ferrules, cable trays along the base and pillars, waterproof glands at the wash module",b:"Run power along the base and up the pillars; keep signal cables apart from motor cables to avoid noise.",m:"Voltage drop at the farthest load"},
+ control:{n:"Frame and technical bay",o:"MEE2, embedded control",d:"The welded frame, deck and ventilated base that holds the electrical system and casters.",p:"ESP32 controllers, relays and SSRs, 12 V battery, charge controller, thermal fuse, emergency stop, 7-inch touchscreen",b:"Keep all electronics in the base, away from heat and moisture, with a ventilated front panel.",m:"Fault tests passed, uptime"},
  ai:{n:"AI control and routing",o:"MEE3, AI drying",d:"Groups the crate’s produce into three temperature zones, assigns each produce a tray, sets each zone’s temperature from the recipes, chooses when to use sun or stored wax heat, seals the chamber at night when heat runs out, and unloads each tray when it reaches its target.",p:"Raspberry Pi or ESP32, recipe library, fuzzy rules trained on your drying logs",b:"Start with fixed rules for routing and fuzzy control for heat; compare against thermostat control on identical batches.",m:"Energy saved, drying time, routing mistakes"},
- pv:{n:"Roof solar panel strip",o:"MEE2, embedded control",d:"The roof section over the processing bay is a PV panel that charges the battery for fans, motors and electronics.",p:"About 120 W panel, charge controller, 12 V battery",b:"Size the battery to run fans and controllers through the night.",m:"Hours of autonomy"},
+ pv:{n:"Solar panel",o:"MEE2, embedded control",d:"The roof section over the processing bay is a PV panel that charges the battery for fans, motors and electronics.",p:"About 120 W panel, charge controller, 12 V battery",b:"Size the battery to run fans and controllers through the night.",m:"Hours of autonomy"},
  camera:{n:"Vision hood",o:"MEE4, machine vision",d:"A closed hood with steady LED light. A trained model names each piece (18 produce types including leaves) and checks quality, then tells the gates and lift which tray it belongs to.",p:"Raspberry Pi 5, camera module, LED ring, light-tight hood",b:"Steady lighting matters more than the model. Collect your own photos of every produce, good and bad.",m:"Classification and quality accuracy"},
  conveyor:{n:"Single-file channel, gates and cutter",o:"MEE5, sorting and handling",d:"A vibrating V-channel lines pieces up for the camera. Then gates send bad pieces to the reject bin and produce with no free tray to the overflow bin. Good pieces pass a rotary cutter that slices, halves or skips, set by the recipe.",p:"Vibratory V-channel, 2 servo gates, reject bin, overflow bin, rotary blade cutter with adjustable thickness",b:"Leaves skip the cutter. Make blades removable for cleaning.",m:"Pieces per minute, cut thickness consistency"},
- handling:{n:"Lifts and chutes",o:"MEE5 with ME3",d:"A cleated incline belt lifts each piece to the tray it was assigned. After drying, product falls off the belt tray into a chute, crosses the base on a short belt, and a second lift drops it into its produce drawer.",p:"2 cleated food-grade incline belts, flap gates at each tray and drawer row, stainless chute, base belt",b:"Cleats instead of buckets are gentler on slices and leaves.",m:"Pieces broken or lost in transfer"},
+ handling:{n:"Loading and unloading carriages",o:"ME3 with MEE5",d:"Loading: one crate at a time, cut pieces drop into a small carriage. It climbs to the tray, and its vibrating spreader swings across the belt while the belt creeps, laying one even layer. Unloading: a second carriage stops just under the dry tray; the belt runs and product drops a few centimetres into its trough. It then moves to that produce’s drawer, a hatch opens, and the trough tips in.",p:"2 vertical carriages on rails with belt or lead-screw drives, vibrating spreader chute, tipping trough, servo hatches on each drawer, slots with flaps in the chamber side walls",b:"One carriage serves all six trays on each side, so there are far fewer parts than six gates and lifts. Keep drops short so dried pieces don’t break.",m:"Layer evenness, broken pieces, time per tray"},
  prep:{n:"Wash and prep module",o:"MEE5, sorting and handling",d:"A clip-on front module. The farmer tips a crate into the water flume, a paddle moves produce onto a brush belt under spray bars, and a fan (air knife) blows off surface water before it enters the machine.",p:"Water flume, paddle wheel, roller-brush incline belt, spray bar, pump, filter, clean-water tank, air knife, own wheels and hitch",b:"Recirculate wash water through a filter and drain it daily. A shallow flume lets tomatoes float instead of bruising.",m:"Soil removed, water used per batch, bruised pieces"},
  storage:{n:"Smart storage drawers",o:"MEE6, IoT and digital twin",d:"Six sealed drawers, one per produce, filled automatically by the lift and flap gates. Each reports humidity, temperature and CO₂ and warns before mould risk rises.",p:"6 gasketed drawers on slides, ESP32, SHT31, SCD40 CO₂ sensor, MQTT dashboard",b:"Label drawers on the touchscreen by produce; alert on rising CO₂ and humidity.",m:"Warning lead time before spoilage"},
 };
@@ -376,14 +391,15 @@ mk(box(X3-X0,.04,1.1),M.bodyDark,0,.16,0,tech);
 const techFront=mk(box(X3-X0,.4,.03),M.body,0,.36,ZF,tech);cutaway.push(techFront);
 for(let i=0;i<14;i++){const v=mk(box(.12,.012,.005),M.vent,-1.3+i*.2,.3+(i%2)*.05,ZF+.018,tech);cutaway.push(v)}
 [-1.45,0,1.45].forEach(x=>[ZF-.08,ZB+.08].forEach(z=>{mk(cyl(.055,.04,18),M.rubber,x,.055,z,tech).rotation.x=Math.PI/2;mk(box(.06,.06,.06),M.steel,x,.12,z,tech)}));
-mk(box(.42,.24,.3),M.dark,.9,.3,-.1,tech);
-mk(box(.06,.05,.05),std(0xc23b2a,.3,.5),.78,.44,-.1,tech);mk(box(.06,.05,.05),M.dark,1.02,.44,-.1,tech);
-mk(box(.3,.22,.08),M.white,.2,.3,-.35,tech);
-const ctlLeds=[0,1,2].map(i=>mk(new THREE.SphereGeometry(.008,8,6),new THREE.MeshBasicMaterial({color:[0x3be07f,0xffb020,0x40a0ff][i]}),.12+i*.05,.38,-.31,tech));
-mk(box(.2,.14,.1),M.dark,-.25,.27,-.3,tech);
-const hmi=new THREE.Group();hmi.position.set(X2,1.3,ZF+.04);hmi.rotation.y=-.15;tech.add(hmi);
+const power=part("power",[0,0,0]);
+mk(box(.42,.24,.3),std(0x3a6ea5,.2,.5),.9,.3,-.1,power);
+mk(box(.06,.05,.05),std(0xc23b2a,.3,.5),.78,.44,-.1,power);mk(box(.06,.05,.05),M.dark,1.02,.44,-.1,power);
+mk(box(.3,.22,.08),M.white,.2,.3,-.35,power);
+const ctlLeds=[0,1,2].map(i=>mk(new THREE.SphereGeometry(.008,8,6),new THREE.MeshBasicMaterial({color:[0x3be07f,0xffb020,0x40a0ff][i]}),.12+i*.05,.38,-.31,power));
+mk(box(.16,.2,.06),std(0x2a6fb5,.3,.5),.85,.38,-.48,power);mk(box(.22,.18,.05),std(0x9aa3a8,.3,.5),.55,.38,-.49,power);for(let i=0;i<6;i++)mk(box(.02,.05,.02),M.dark,.47+i*.032,.4,-.46,power);
+const hmi=new THREE.Group();hmi.position.set(X2,1.3,ZF+.04);hmi.rotation.y=-.15;power.add(hmi);
 mk(box(.24,.16,.025),M.dark,0,0,0,hmi);mk(new THREE.PlaneGeometry(.21,.13),screenMat,0,0,.014,hmi).castShadow=false;
-const estop=mk(cyl(.025,.02,16),std(0xd0201a,.1,.4),X2,1.12,ZF+.04,tech);estop.rotation.x=Math.PI/2;
+const estop=mk(cyl(.025,.02,16),std(0xd0201a,.1,.4),X2,1.12,ZF+.04,power);estop.rotation.x=Math.PI/2;
 
 /* chamber */
 const chamber=part("chamber",[0,0,0]);
@@ -488,9 +504,9 @@ let damperAng=0;
 /* pv strip */
 const pv=part("pv",[-.3,.9,0]);
 const pvG=new THREE.Group();pvG.position.set(-2.28,1.78,0);pvG.rotation.x=SLOPE;pv.add(pvG);[-.32,.32].forEach(x=>mk(box(.04,1.2,.04),M.alu,-2.28+x,1.17,-.42,pv));
-mk(box(X1-X0+.04,.06,RD+.06),M.alu,0,0,0,pvG);mk(box(X1-X0-.02,.005,RD),M.pv,0,.033,0,pvG);
-for(let i=1;i<4;i++)mk(box(.003,.002,RD),M.alu,-(X1-X0)/2+i*(X1-X0)/4,.037,0,pvG);
-for(let i=1;i<6;i++)mk(box(X1-X0-.02,.002,.003),M.alu,0,.037,-RD/2+i*RD/6,pvG);
+mk(box(1.34,.06,RD+.06),M.alu,0,0,0,pvG);mk(box(1.28,.005,RD),M.pv,0,.033,0,pvG);
+for(let i=1;i<6;i++)mk(box(.003,.002,RD),M.alu,-.64+i*1.28/6,.037,0,pvG);
+for(let i=1;i<6;i++)mk(box(1.28,.002,.003),M.alu,0,.037,-RD/2+i*RD/6,pvG);
 
 /* two-axis tracker + concentrator dish */
 const PIV=3.3,MX=CX+.05;
@@ -576,36 +592,94 @@ mk(box(.22,.2,.3),M.dark,-1.16,1.26,.05,camera3);
 const lp=mk(box(.2,.01,.26),lightPanel,-1.16,1.155,.05,camera3);lp.castShadow=false;
 mk(cyl(.02,.03,14),M.white,-1.16,1.38,.05,camera3);
 
-/* storage bay: 6 drawers */
+/* storage bay: 6 drawers in one column */
 const storage=part("storage",[.9,0,.3]);
 mk(box(.04,1.3,1.08),M.body,X3-.02,1.25,0,storage);
 mk(box(X3-X2,1.3,.03),M.body,(X2+X3)/2,1.25,ZB+.02,storage);
 mk(box(X3-X2,.04,1.08),M.insul,(X2+X3)/2,1.9,0,storage);
-const riskLeds=[],prodLayers=[];
+const riskLeds=[],prodLayers=[],hatches=[];
 const binMat=std(0x2b5d9e,.05,.4,{transparent:true,opacity:.42,depthWrite:false});
 const prodMat=std(0x7a2a17,0,.85);
-const ROWS=[.8,1.2,1.6],COLS=[.93,1.335],DW=.38;
-ROWS.forEach((y,ri)=>{COLS.forEach((x,ci)=>{
- mk(box(DW,.3,.9),binMat,x,y,-.02,storage);
- const pl=mk(box(DW-.04,1,.84),prodMat.clone(),x,y-.14,-.02,storage);pl.scale.y=.001;pl.visible=false;prodLayers.push(pl);
- mk(cyl(.025,.012,14),M.white,x+.1,y+.156,-.02,storage);
- const f=mk(box(DW+.01,.34,.03),M.body,x,y,ZF,storage);cutaway.push(f);
- const hnd=mk(box(.14,.02,.02),M.dark,x,y+.08,ZF+.03,storage);cutaway.push(hnd);
- riskLeds.push(mk(new THREE.SphereGeometry(.008,8,6),new THREE.MeshBasicMaterial({color:0x3be07f}),x+.15,y+.12,ZF+.02,storage))});
- mk(box(.7,.01,.08),M.steel,1.1,y+.17,-.3,storage)});
+const DX0=X2+.28,DX1=X3-.05,DXC=(DX0+DX1)/2,DW=DX1-DX0;
+const ROWY=[0,1,2,3,4,5].map(i=>.7+i*.205);
+ROWY.forEach((y,i)=>{
+ mk(box(DW,.17,.9),binMat,DXC,y,-.02,storage);
+ const pl=mk(box(DW-.04,1,.84),prodMat.clone(),DXC,y-.08,-.02,storage);pl.scale.y=.001;pl.visible=false;prodLayers.push(pl);
+ mk(cyl(.022,.01,12),M.white,DXC+.25,y+.09,-.02,storage);
+ const f=mk(box(DW+.04,.19,.03),M.body,DXC,y,ZF,storage);cutaway.push(f);
+ const hnd=mk(box(.14,.02,.02),M.dark,DXC,y+.04,ZF+.03,storage);cutaway.push(hnd);
+ riskLeds.push(mk(new THREE.SphereGeometry(.008,8,6),new THREE.MeshBasicMaterial({color:0x3be07f}),DXC+.3,y+.05,ZF+.02,storage));
+ const hg=new THREE.Group();hg.position.set(DX0-.004,y+.085,-.02);storage.add(hg);mk(box(.006,.07,.72),M.steel,0,-.035,0,hg);hatches.push(hg)});
 
-/* lifts and chutes (MEE5 with ME3) */
+/* loading and unloading carriages (ME3 with MEE5) */
 const handling=part("handling",[0,0,.75]);
-const hMat=std(0x8e969d,.75,.42,{transparent:true,opacity:.5,depthWrite:false});
-mk(box(.06,.95,.2),M.rubber,-.84,1.3,.05,handling);
-TRAY_Y.forEach(y=>{const c=mk(box(.14,.008,.22),M.steel,-.77,y+.06,.05,handling);c.rotation.z=-.35});
-mk(box(.04,1.24,.8),hMat,PX+.04,1.22,-.02,handling);
-mk(box(.4,.03,.18),M.rubber,PX+.22,.31,-.3,handling);
-[PX+.04,PX+.4].forEach(x=>{mk(cyl(.022,.2,12),M.steel,x,.31,-.3,handling).rotation.x=Math.PI/2});
-mk(box(.06,1.5,.2),M.rubber,X2+.1,1.07,-.3,handling);
-function cleatLine(x,z,y0,y1,n){const arr=[];for(let i=0;i<n;i++){const b=mk(box(.075,.012,.2),std(0xd98e0b,.2,.5),x,y0,z,handling);arr.push({m:b,u:i/n,y0,y1})}return arr}
-const liftL=cleatLine(-.805,.05,.85,1.75,8),liftR=cleatLine(X2+.135,-.3,.33,1.82,12);
-let speedL=.05,speedR=.05;
+const LCX=-.80,UCX=X2+.13,DOCK=1.06;
+[-.47,.47].forEach(z=>{mk(box(.03,1.0,.03),M.steel,LCX-.03,1.35,z,handling);mk(box(.03,1.3,.03),M.steel,UCX,1.25,z,handling)});
+mk(box(.05,.05,.05),M.dark,LCX-.03,1.88,-.47,handling);mk(box(.05,.05,.05),M.dark,UCX,1.92,-.47,handling);
+TRAY_Y.forEach(y=>{mk(box(.045,.035,.82),M.dark,X1+.02,y+.03,-.02,handling);mk(box(.045,.035,.82),M.dark,X2-.02,y+.005,-.02,handling)});
+const lcar=new THREE.Group();lcar.position.set(LCX,DOCK,0);handling.add(lcar);
+mk(box(.06,.03,.98),M.alu,-.03,-.04,0,lcar);
+const lbinMat=hMatA();mk(box(.13,.01,.2),M.steel,0,-.03,.05,lcar);[[0,.105],[0,-.005]].forEach(a=>mk(box(.13,.07,.008),lbinMat,0,0,a[1],lcar));mk(box(.008,.07,.11),lbinMat,-.065,0,.05,lcar);
+const spread=new THREE.Group();spread.position.set(.07,-.01,0);lcar.add(spread);const sp1=mk(box(.13,.008,.12),M.steel,.06,0,0,spread);sp1.rotation.z=-.25;mk(box(.04,.03,.04),M.dark,0,-.03,0,spread);
+const lbinItems=[0,1,2,3,4].map(i=>{const m=mk(new THREE.SphereGeometry(.022,10,8),M.white,(i%2-.5)*.04,-.005+Math.floor(i/2)*.02,.02+(i%3)*.03,lcar);m.visible=false;return m});
+const ucar=new THREE.Group();ucar.position.set(UCX,1.0,0);handling.add(ucar);
+mk(box(.05,.03,.98),M.alu,0,-.06,0,ucar);
+const trough=new THREE.Group();trough.position.set(.05,-.03,0);ucar.add(trough);
+mk(box(.14,.008,.84),M.steel,0,0,0,trough);mk(box(.008,.08,.84),M.steel,-.07,.04,0,trough);mk(box(.008,.05,.84),M.steel,.07,.025,0,trough);[-.42,.42].forEach(z=>mk(box(.14,.08,.008),M.steel,0,.04,z,trough));
+const uItems=[0,1,2,3,4,5,6,7].map(i=>{const m=mk(new THREE.CylinderGeometry(.03,.03,.01,10),M.white,(i%2-.5)*.05,.012,-.35+i*.1,trough);m.visible=false;return m});
+function hMatA(){return std(0xb8bfc4,.7,.35,{transparent:true,opacity:.35,depthWrite:false})}
+
+/* electrical: nodes and wiring (MEE2) */
+const nodes=part("nodes",[0,0,0]);
+const pcb=std(0x1f6b3a,.2,.6);
+mk(box(.14,.1,.04),pcb,-1.4,.62,-.46,nodes);mk(box(.08,.06,.04),pcb,-.78,.62,-.46,nodes);mk(box(.08,.06,.04),pcb,UCX,.62,-.46,nodes);
+zoneY.forEach(ys=>mk(box(.03,.06,.04),pcb,X2+.04,(ys[0]+ys[1])/2,.28,nodes));
+const wiring=part("wiring",[0,0,0]);
+const WCOL={solar:0xf08a24,power:0xd63a2a,motor:0x8a5cd6,signal:0x3a8fd6,safety:0xe8c020};
+const cables=[];
+function cable(cls,act,pts){const cp=new THREE.CurvePath();for(let i=1;i<pts.length;i++)cp.add(new THREE.LineCurve3(new THREE.Vector3(...pts[i-1]),new THREE.Vector3(...pts[i])));
+ const r=cls==="signal"?.009:.013;const m=mk(new THREE.TubeGeometry(cp,pts.length*8,r,6,false),new THREE.MeshBasicMaterial({color:WCOL[cls]}),0,0,0,wiring);m.castShadow=false;cables.push({cp,cls,act,len:cp.getLength()});return m}
+cable("solar","solar",[[-2.28,1.72,-.42],[-2.28,.5,-.44],[-1.6,.5,-.44],[-1.5,.42,-.47],[.6,.42,-.5],[.82,.38,-.48]]);
+cable("power","base",[[.85,.33,-.45],[.9,.33,-.3],[.9,.42,-.15]]);
+cable("power","base",[[.85,.42,-.12],[.6,.42,-.3],[.55,.33,-.46]]);
+cable("power","base",[[.5,.45,-.47],[-1.45,.45,-.47]]);
+cable("power","base",[[.55,.45,-.47],[UCX,.45,-.47],[UCX,.6,-.45]]);
+cable("power","base",[[.2,.45,-.47],[.2,.36,-.39]]);
+cable("power","ai",[[-.55,.45,-.47],[-.55,.34,-.36]]);
+cable("power","fans",[[CX-.25,.45,-.47],[CX-.25,1.6,-.47]]);
+zoneY.forEach(ys=>{const y=(ys[0]+ys[1])/2+.02;cable("power","fans",[[CX-.25,y,-.47],[CX-.06,y,-.38]])});
+cable("power","base",[[.5,.45,-.47],[.48,.45,.46],[.48,1.62,.46]]);
+TRAY_Y.forEach(y=>cable("motor","belts",[[.48,y,.46],[PX+.02,y-.01,.45]]));
+zoneY.forEach(ys=>{const y=(ys[0]+ys[1])/2;cable("power","base",[[.48,y,.46],[X2+.04,y,.3]])});
+cable("power","base",[[.48,1.3,.46],[X2,1.3,.56]]);
+cable("power","carL",[[-.78,.45,-.47],[-.78,.6,-.45]]);
+cable("motor","carL",[[-.78,.65,-.45],[-.83,1.85,-.47]]);
+cable("motor","carR",[[UCX,.65,-.45],[UCX,1.9,-.47]]);
+cable("power","wash",[[-1.45,.45,-.47],[-1.4,.6,-.45]]);
+cable("motor","wash",[[-1.42,.6,-.44],[-1.6,.5,-.3],[-2.25,.15,.2]]);
+cable("motor","wash",[[-1.38,.62,-.42],[-1.33,1.0,0]]);
+cable("motor","wash",[[-1.35,.65,-.42],[-.95,1.05,-.1],[-.95,1.13,0]]);
+cable("motor","wash",[[-1.43,.62,-.44],[-1.6,1.2,-.1],[-1.68,1.24,.05]]);
+cable("motor","wash",[[-1.45,.6,-.44],[-2.0,.62,-.3],[-2.4,.86,-.3]]);
+cable("signal","sig",[[.25,.4,-.4],[.5,.5,-.2],[.52,.8,.26],[.52,1.6,.26]]);
+cable("signal","sig",[[.15,.3,-.38],[-.45,.3,-.34]]);
+cable("signal","sig",[[-.6,.35,-.32],[-1.1,.6,-.42],[-1.16,1.3,-.1],[-1.16,1.36,.04]]);
+cable("signal","sig",[[.3,.4,-.36],[.5,.9,.5],[X2,1.25,.56]]);
+cable("signal","sig",[[.1,.32,-.42],[-1.38,.58,-.42]]);
+cable("signal","sig",[[.35,.35,-.42],[.8,.36,-.46]]);
+cable("safety","safe",[[X2,1.1,.56],[.5,.6,.3],[.55,.4,-.44]]);
+const NDOT=3,dotGeo=new THREE.BufferGeometry(),dotPos=new Float32Array(cables.length*NDOT*3),dotCol=new Float32Array(cables.length*NDOT*3);
+dotGeo.setAttribute("position",new THREE.BufferAttribute(dotPos,3));dotGeo.setAttribute("color",new THREE.BufferAttribute(dotCol,3));
+const dots=new THREE.Points(dotGeo,new THREE.PointsMaterial({size:.07,vertexColors:true,transparent:true,opacity:.95,depthWrite:false,depthTest:false}));dots.renderOrder=5;wiring.add(dots);
+const dotU=cables.map(()=>[0,1/3,2/3]);
+const ELABS=[["pv","PV","Solar panel",[-2.28,2.0,0]],["power","MPPT","Charge controller",[.85,.62,-.5]],["power","12 V","Battery 100 Ah",[.9,.56,-.1]],["power","DC","Fuse board",[.55,.6,-.5]],["power","CTRL","Main controller",[.2,.5,-.35]],["ai","MEE3","AI + vision computer",[-.55,.48,-.3]],["nodes","NODE","Zone nodes",[X2+.04,1.75,.28]],["nodes","DRV","Motor drivers",[-.78,.78,-.46]],["nodes","RELAY","Wash relays",[-1.4,.78,-.46]],["power","HMI","Touchscreen + E-stop",[X2,1.46,.6]]];
+const elabEls=ELABS.map(([k,o,t,a])=>{const b=document.createElement("button");b.className="lab";b.innerHTML="<b>"+o+"</b>"+t;b.addEventListener("click",()=>select(k,true));$("#labels").appendChild(b);return{k,el:b,a:new THREE.Vector3(...a)}});
+function loadW(r){const ai=cfg.control==="ai";const fansOn=r.toCh>.12||r.gelDry;const L={ctrl:8,ai:ai?10:0,screen:r.G>0?4:1,dampers:2,
+ fans:fansOn?(r.toCh<.12?12:9+15*Math.min(1,r.toCh/1.2)):0,belts:(phase==="drying"&&cfg.agitator?5:0)+(job&&uc.state==="collect"?12:0),
+ carriages:((car.state==="rise"||car.state==="return"||car.state==="spread")?25:0)+(job&&uc.state!=="collect"?25:0),wash:phase==="loading"?140:0};let t=0;for(const k in L)t+=L[k];L.total=t;return L}
+function dailyNeed(){const ai=cfg.control==="ai";return Math.round(24*(8+(ai?10:0)+2+2.5)+12*20+(cfg.desiccant?12*12:0)+24*5+100)}
+function dailyPV(){return Math.round(cfg.pvW*.8*WX[cfg.weather].peak*7.64/1000)}
+let socWh=1150*.8;const BATT=1150;
 
 /* airflow particles */
 const airCurve=new THREE.CatmullRomCurve3([
@@ -622,19 +696,19 @@ const airPts=new THREE.Points(pGeo,pMat);scene.add(airPts);
 const cCool=new THREE.Color(0x7fc4ff),cWarm=new THREE.Color(0xffb347),cHot=new THREE.Color(0xff4a2a),cWet=new THREE.Color(0xbfd6e0);
 
 /* labels */
-const LAB=[["collector","ME1","Roof collector",[1.0,2.75,.3]],["tubes","ME1","Evacuated tubes",[-.9,2.75,.3]],["airtreat","ME2","Silica gel + recirculation",[CX,1.75,-.75]],["prep","MEE5","Wash + prep",[-2.3,1.5,.1]],["conveyor","MEE5","Gates + cutter",[-1.0,1.42,.3]],["handling","MEE5","Lifts + chutes",[X2+.1,1.95,-.3]],["dish","ME1","Concentrator dish",[CX,4.0,0]],["tracker","ME1","2-axis tracker",[CX+.3,2.95,.25]],["pcm","ME1","Wax heat wall",[CX-.4,1.95,-.5]],["chamber","ME2","Chamber",[CX-.3,1.75,.56]],["fans","ME2","Zone fans",[CX,1.15,-.4]],["agitator","ME3","Belt trays + comb",[CX+.35,1.72,.42]],["sensors","MEE1","Moisture sensing",[X2-.05,1.0,.1]],["control","MEE2","Tech bay + screen",[X2,1.42,.6]],["ai","MEE3","AI unit",[-.55,.42,.0]],["camera","MEE4","Vision hood",[-1.16,1.5,.05]],["storage","MEE6","Storage drawers",[(X2+X3)/2,1.98,.4]],["pv","MEE2","PV roof",[(X0+X1)/2,2.25,.4]]];
+const LAB=[["collector","ME1","Roof collector",[1.0,2.75,.3]],["tubes","ME1","Evacuated tubes",[-.9,2.75,.3]],["airtreat","ME2","Silica gel + recirculation",[CX,1.75,-.75]],["prep","MEE5","Wash + prep",[-2.3,1.5,.1]],["conveyor","MEE5","Gates + cutter",[-1.0,1.42,.3]],["handling","ME3","Carriages",[UCX,2.0,.5]],["dish","ME1","Concentrator dish",[CX,4.0,0]],["tracker","ME1","2-axis tracker",[CX+.3,2.95,.25]],["pcm","ME1","Wax heat wall",[CX-.4,1.95,-.5]],["chamber","ME2","Chamber",[CX-.3,1.75,.56]],["fans","ME2","Zone fans",[CX,1.15,-.4]],["agitator","ME3","Belt trays + comb",[CX+.35,1.72,.42]],["sensors","MEE1","Moisture sensing",[X2-.05,1.0,.1]],["control","MEE2","Tech bay + screen",[X2,1.42,.6]],["ai","MEE3","AI unit",[-.55,.42,.0]],["camera","MEE4","Vision hood",[-1.16,1.5,.05]],["storage","MEE6","Storage drawers",[(X2+X3)/2,1.98,.4]],["pv","MEE2","PV roof",[(X0+X1)/2,2.25,.4]]];
 const labEls=LAB.map(([k,o,t,a])=>{const b=document.createElement("button");b.className="lab";b.innerHTML="<b>"+o+"</b>"+t;b.addEventListener("click",()=>select(k,true));$("#labels").appendChild(b);return{k,el:b,a:new THREE.Vector3(...a)}});
 const jump=$("#jump");Object.keys(INFO).forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=INFO[k].n;jump.appendChild(o)});
 jump.addEventListener("change",()=>{if(jump.value)select(jump.value,true)});
 const PEOPLE=[
  {c:"ME1",n:"Jamiat Opeyemi Akande",d:"Mechanical",t:"Design, fabrication and performance evaluation of a solar thermal collector integrated with phase-change material thermal storage for agricultural drying",k:["collector","tubes","pcm"],a:"Catching and storing the sun’s heat: the double-pass roof collector, the evacuated tube array and the wax heat wall (plus the optional mirror dish).",m:"Receiver outlet temperature, heat stored in the wax, hours of heat after sunset"},
  {c:"ME2",n:"Obaloluwa Vincent Ayeni",d:"Mechanical",t:"Design, CFD simulation and experimental evaluation of an independently controlled multi-zone agricultural drying chamber",k:["chamber","fans","airtreat"],a:"The three-zone chamber, zone fans and dampers, the silica gel bed and the smart recirculation duct, plus the CFD study of airflow.",m:"Temperature and air speed in each zone, difference between zones"},
- {c:"ME3",n:"Beloved Oyebode Adeoye",d:"Mechanical",t:"Design and fabrication of an autonomous mechanical product agitation and redistribution mechanism for agricultural drying",k:["agitator"],a:"Six belt trays: they lay an even layer while loading, jog under a fixed comb to turn produce, and run forward to unload.",m:"Moisture spread between pieces, product broken or lost"},
+ {c:"ME3",n:"Beloved Oyebode Adeoye",d:"Mechanical",t:"Design and fabrication of an autonomous mechanical product agitation and redistribution mechanism for agricultural drying",k:["agitator","handling"],a:"Six belt trays with fixed combs, plus the mechanics of the two vertical carriages that spread produce onto trays and carry dried product to the drawers (shared with MEE5).",m:"Moisture spread between pieces, product broken or lost"},
  {c:"MEE1",n:"Emmanuel Adesope Arasanyin",d:"Mechatronics",t:"Development of a sensor-fusion-based moisture estimation system for autonomous agricultural drying",k:["sensors"],a:"Load cells under every belt tray plus humidity, temperature and airflow sensors, combined into a live moisture estimate per tray and per produce.",m:"Estimate error against oven-dry samples"},
- {c:"MEE2",n:"Mayowa Samuel Elegbede",d:"Mechatronics",t:"Design and implementation of an embedded control and safety architecture for an autonomous hybrid agricultural dryer",k:["control","pv"],a:"The base technical bay: controllers, motor drivers (including the dish tracker motors), battery and PV supply, touchscreen, emergency stop and safety cutoffs.",m:"Fault tests passed, response time, uptime"},
+ {c:"MEE2",n:"Mayowa Samuel Elegbede",d:"Mechatronics",t:"Design and implementation of an embedded control and safety architecture for an autonomous hybrid agricultural dryer",k:["power","nodes","wiring","pv","control"],a:"The whole electrical system: solar panel, charge controller, battery, fuse board, main controller, zone nodes, motor drivers, relays, touchscreen, E-stop and all wiring.",m:"Fault tests passed, response time, uptime"},
  {c:"MEE3",n:"Oluwatoyin Muftaudeen Jimoh",d:"Mechatronics",t:"Development of an artificial intelligence-based adaptive control system for energy-efficient agricultural drying",k:["ai"],a:"The AI that groups produce into temperature zones, routes pieces to trays, sets each zone’s temperature, chooses when to use sun or stored wax heat, seals the chamber at night when heat runs out, and unloads each tray when done.",m:"Energy saved and drying time versus thermostat control"},
  {c:"MEE4",n:"Olatunde Akolade Salako",d:"Mechatronics",t:"Development of a computer vision-based agricultural product quality assessment and classification system",k:["camera"],a:"The vision hood: names each piece among 18 produce types, checks quality, and tells the gates which tray it goes to.",m:"Classification and grading accuracy"},
- {c:"MEE5",n:"Praise Timilehin Olumuyiwa",d:"Mechatronics",t:"Design and development of an automated mechatronic product handling and sorting system for agricultural processing",k:["prep","conveyor","handling"],a:"Wash flume, brush belt and air knife; single-file channel, reject and overflow gates, cutter; the lifts and chutes into trays and drawers.",m:"Items per minute, sorting and routing accuracy"},
+ {c:"MEE5",n:"Praise Timilehin Olumuyiwa",d:"Mechatronics",t:"Design and development of an automated mechatronic product handling and sorting system for agricultural processing",k:["prep","conveyor","handling"],a:"Wash flume, brush belt and air knife; single-file channel, reject and overflow gates, cutter; and the control of both carriages and the drawer hatches.",m:"Items per minute, sorting and routing accuracy"},
  {c:"MEE6",n:"Babatunde Muhibudeen Raji",d:"Mechatronics",t:"Development of an IoT-enabled digital monitoring and predictive storage management system for dried agricultural products",k:["storage"],a:"The sealed storage drawers, their humidity and CO₂ sensors, the dashboard and spoilage prediction.",m:"Warning lead time before spoilage"}];
 const jumpP=$("#jumpP");PEOPLE.forEach((P,i)=>{const o=document.createElement("option");o.value=i;o.textContent=P.c+", "+P.n;jumpP.appendChild(o)});
 jumpP.addEventListener("change",()=>{if(jumpP.value!=="")selectPerson(+jumpP.value)});
@@ -688,6 +762,7 @@ function syncZsel(){}
 let sim=null,live=null;
 function changed(k){live=null;syncZsel();if(k==="dish"){resetPart();buildDish();prepGhost(parts.dish);parts.dish.userData.exp=null}syncUI();applyVisibility();recalc()}
 function applyVisibility(){
+ wiring.visible=cfg.emode!=="phys";nodes.visible=true;$("#legend").style.display=cfg.emode!=="phys"?"flex":"none";pvG.scale.x=cfg.pvW/300;
  dishPart.visible=!!cfg.dish;tracker.visible=!!cfg.dish;$("#trackRow").style.display=cfg.dish?"":"none";
  tubesP.visible=cfg.tubes>0;tubeMeshes.forEach((m,i)=>{const v=i<cfg.tubes;m[0].visible=v;m[1].visible=v});collector.visible=cfg.roof;airtreat.visible=cfg.desiccant||cfg.recirc;gelBox.visible=cfg.desiccant;
  const nt=Math.round(20*cfg.pcm/40);tubes.forEach((t,i)=>t.visible=i<nt);
@@ -697,7 +772,7 @@ function applyVisibility(){
  ai.visible=cfg.control==="ai";
  
  cutaway.forEach(m=>m.visible=!cfg.cutaway);
- airPts.visible=cfg.airflow;
+ airPts.visible=cfg.airflow&&cfg.emode!=="elec";
  $("#labels").style.display=cfg.labels?"":"none";
  if(typeof applyGhosts==="function")applyGhosts();
 }
@@ -734,44 +809,57 @@ function inShape(R,cut){if(R.cut==="leaf")return{geo:sliceGeo,sc:[1.7,.35,.8]};i
 function loadPath(dest,t){const zj=(Math.random()-.5)*.12;const a=[V(-2.95,1.2,.05),V(-2.75,.88,.05+zj),V(-2.25,.88,.05+zj),V(-2.18,.88,.05),V(-1.7,1.15,.05),V(-1.58,1.16,.05),V(-1.5,1.14,.05),V(-1.16,1.14,.05),V(-1.04,1.14,.05)];
  if(dest==="reject")return a.concat([V(-1.06,.98,.2),V(-1.08,.7,.3)]);
  if(dest==="overflow")return a.concat([V(-1.06,.98,-.1),V(-1.08,.7,-.28)]);
- const y=TRAY_Y[t];return a.concat([V(-.95,1.14,.05),V(-.84,.98,.05),V(-.84,y+.09,.05),V(-.74,y+.05,.05),V(BXL+.03,y+.03,(Math.random()-.5)*.5)])}
+ return a.concat([V(-.95,1.14,.05),V(-.86,1.13,.05),V(LCX,DOCK+.02,.05+(Math.random()-.5)*.06)])}
 function spawnMover(path,mat,shape,speed,onSeg,onDone){const m=new THREE.Mesh(shape.geo,mat);m.scale.set(...shape.sc);m.castShadow=true;m.position.copy(path[0]);scene.add(m);const segs=[];for(let i=1;i<path.length;i++)segs.push(Math.max(1e-4,path[i].distanceTo(path[i-1])));movers.push({m,path,segs,s:0,k:-1,speed,onSeg,onDone})}
 function stepMovers(dt){for(let i=movers.length-1;i>=0;i--){const o=movers[i];o.s+=dt*o.speed;let s=o.s,k=0;while(k<o.segs.length&&s>o.segs[k]){s-=o.segs[k];k++}
  if(k>=o.segs.length){scene.remove(o.m);movers.splice(i,1);if(o.onDone)o.onDone();continue}
  if(k!==o.k){const k0=o.k;o.k=k;if(o.onSeg)for(let kk=k0+1;kk<=k;kk++)o.onSeg(kk,o)}o.m.position.lerpVectors(o.path[k],o.path[k+1],s/o.segs[k]);o.m.rotation.y+=dt*2}}
 function clearMovers(){movers.forEach(o=>scene.remove(o.m));movers.length=0}
-function trayFor(k){let best=-1,bn=1e9;activePlan.trays.forEach((kk,t)=>{if(kk!==k)return;const n=arrived[t]+pendingTo[t];if(n<PER_TRAY&&n<bn){bn=n;best=t}});return best}
-function startLoading(){plan=makePlan(cfg.crate);activePlan=plan;arrived=[0,0,0,0,0,0];pendingTo=[0,0,0,0,0,0];trays.forEach(t=>{t.fill=0;t.sweep=0;t.fall=0});
+let car={state:"dock",t:-1,count:0,timer:0,order:[]},uc={state:"park",timer:0,tilt:0,count:0};
+function moveTo(obj,target,dt,v){const d=target-obj.position.y;const st=Math.sign(d)*Math.min(Math.abs(d),v*dt);obj.position.y+=st;return Math.abs(d)<.003}
+function startLoading(){plan=makePlan(cfg.crate);activePlan=plan;arrived=[0,0,0,0,0,0];trays.forEach(t=>{t.fill=0;t.sweep=0;t.fall=0});
  prog=[0,1,2,3,4,5].map(t=>activePlan.trays[t]?0:1);trayQ=[0,1,2,3,4,5].map(t=>!activePlan.trays[t]);
- spawnList=[];activePlan.trays.forEach(k=>{if(k)for(let i=0;i<PER_TRAY;i++)spawnList.push({k,bad:false})});
- const nRej=Math.max(1,Math.round(spawnList.length*.12));for(let i=0;i<nRej;i++)spawnList.push({k:cfg.crate[i%cfg.crate.length],bad:true});
- activePlan.overflow.forEach(k=>{for(let i=0;i<3;i++)spawnList.push({k,bad:false})});
- for(let i=spawnList.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[spawnList[i],spawnList[j]]=[spawnList[j],spawnList[i]]}
+ car.order=[0,1,2,3,4,5].filter(t=>activePlan.trays[t]);car.t=car.order.shift();car.count=0;car.state="dock";lcar.position.y=DOCK;
+ spawnList=[];[car.t].concat(car.order).forEach(t=>{const k=activePlan.trays[t];const crate=[];for(let i=0;i<PER_TRAY;i++)crate.push({k,bad:false,t});crate.splice(1+Math.floor(Math.random()*PER_TRAY),0,{k,bad:true,t:-1});spawnList.push(...crate)});
+ activePlan.overflow.forEach(k=>{for(let i=0;i<3;i++)spawnList.push({k,bad:false,t:-1,over:true})});
  overflowCount=0;rejectCount=0;spawnT=0;phase="loading";batchNo++;elapsed=0;runSt={stored:0};hour=8;live=null;
- $("#status").textContent="Loading: crates tipped into the wash flume…";$("#run").textContent="Loading…";buildBars();recalc()}
-function spawnNext(){const it=spawnList.shift();const R=REC[it.k];let dest,t=-1;
- if(it.bad)dest="reject";else{t=trayFor(it.k);dest=t<0?"overflow":"tray";if(t>=0)pendingTo[t]++}
+ $("#status").textContent="Loading one crate at a time: wash, sort, cut, then the carriage spreads each tray…";$("#run").textContent="Loading…";buildBars();recalc()}
+function canSpawn(){const it=spawnList[0];if(!it)return false;if(it.bad||it.over)return true;return car.state==="dock"&&it.t===car.t&&car.count+inFlight<PER_TRAY}
+let inFlight=0;
+function spawnNext(){const it=spawnList.shift();const R=REC[it.k];const dest=it.bad?"reject":it.over?"overflow":"tray",t=it.t;
+ if(dest==="tray")inFlight++;
  spawnMover(loadPath(dest,t),it.bad?badMat:itemMats[it.k].f,inShape(R,false),1.0,(k,o)=>{
-  if(k===VISION_I)$("#nVis").textContent=it.bad?R.n+": damaged → reject bin":dest==="overflow"?R.n+": no free tray → overflow bin":R.n+" → "+["bottom","middle","top"][t>>1]+" zone, tray "+(t%2+1);
+  if(k===VISION_I)$("#nVis").textContent=it.bad?R.n+": damaged → reject bin":dest==="overflow"?R.n+": no free tray → overflow bin":R.n+" → carriage → "+["bottom","middle","top"][t>>1]+" zone, tray "+(t%2+1);
   if(k===CUT_I&&dest==="tray"){const sh=inShape(R,true);o.m.geometry=sh.geo;o.m.scale.set(...sh.sc)}},
-  ()=>{if(dest==="tray"){pendingTo[t]--;arrived[t]++;trays[t].fill=Math.min(1,arrived[t]/PER_TRAY)}else if(dest==="overflow")overflowCount++;else rejectCount++;
-   if(phase==="loading"&&!spawnList.length&&activePlan.trays.every((kk,tt)=>!kk||arrived[tt]>=PER_TRAY))startDrying()})}
-function unloadPath(t,d){const y=TRAY_Y[t],ry=ROWS[d>>1],cx=COLS[d%2];
- return[V(PX+.02,y+.02,(Math.random()-.5)*.5),V(PX+.05,y-.08,-.1),V(PX+.05,.36,-.3),V(X2+.1,.36,-.3),V(X2+.1,ry+.2,-.3),V(cx-.1,ry+.19,-.3),V(cx+(Math.random()-.5)*.2,ry-.06,(Math.random()-.5)*.6)]}
+  ()=>{if(dest==="tray"){inFlight--;car.count++;arrived[t]++;if(car.count>=PER_TRAY)car.state="rise"}else if(dest==="overflow")overflowCount++;else rejectCount++})}
+function stepCar(dt){
+ const t=car.t;const R_=t>=0&&t!==undefined?trayRec(t):null;
+ lbinItems.forEach((m,i)=>{m.visible=!!R_&&i<car.count;if(R_)m.material=itemMats[activePlan.trays[t]].f});
+ if(car.state==="rise"){if(moveTo(lcar,TRAY_Y[t]+.05,dt,.35)){car.state="spread";car.timer=0}}
+ else if(car.state==="spread"){car.timer+=dt;const f=Math.min(1,car.timer/1.8);trays[t].fill=f;car.count=Math.round(PER_TRAY*(1-f));spread.position.z=Math.sin(car.timer*9)*.3;
+  if(car.timer>=1.9){trays[t].fill=1;car.count=0;spread.position.z=0;car.t=car.order.length?car.order.shift():-1;car.state="return"}}
+ else if(car.state==="return"){if(moveTo(lcar,DOCK,dt,.35)){car.state="dock";if(phase==="loading"&&car.t<0)startDrying()}}
+}
 function stepJobs(dt){
- if(!job&&jobs.length){job=jobs.shift();job.time=0;job.k=activePlan.trays[job.t];job.d=drawerFor(job.k);job.y=yieldT(job.t);job.n=0}
- if(!job){speedR+=(.05-speedR)*.05;return}
- job.time+=dt;const T=trays[job.t],tm=job.time;speedR=.6;
- while(job.n<PER_TRAY&&tm>.5+job.n*.22){const d=job.d,yy=job.y;spawnMover(unloadPath(job.t,d),itemMats[job.k].d,shapeOf(REC[job.k]),1.1,null,()=>{drawerKg[d]+=yy/PER_TRAY});job.n++}
- if(tm<.2)T.sweep=0;else if(tm<1.6)T.sweep=(tm-.2)/1.4;else if(tm<2.0){T.sweep=1;T.fall=(tm-1.6)/.4}else{T.sweep=0;T.fall=0;T.fill=0;job=null;
-  if(phase==="unloading"&&!jobs.length){phase="done";$("#status").textContent="Batch "+batchNo+" done in "+fmtH(elapsed)+". Each produce went to its own drawer."+(activePlan.overflow.length?" Overflow bin holds "+activePlan.overflow.map(k=>REC[k].n).join(", ")+" for the next batch.":"");$("#run").textContent="Run next batch"}}
+ if(!job&&jobs.length){job=jobs.shift();job.k=activePlan.trays[job.t];job.d=drawerFor(job.k);job.y=yieldT(job.t);uc.state="toTray";uc.timer=0}
+ hatches.forEach((h,i)=>{const open=job&&uc.state==="pour"&&job.d===i;h.rotation.z+=((open?.9:0)-h.rotation.z)*.2});
+ uItems.forEach((m,i)=>{m.visible=!!job&&i<uc.count;if(job)m.material=itemMats[job.k].d});
+ trough.rotation.z=-uc.tilt;
+ if(!job){moveTo(ucar,1.0,dt,.35);return}
+ const T=trays[job.t];
+ if(uc.state==="toTray"){if(moveTo(ucar,TRAY_Y[job.t]-.06,dt,.35)){uc.state="collect";uc.timer=0}}
+ else if(uc.state==="collect"){uc.timer+=dt;T.sweep=Math.min(1,uc.timer/1.4);uc.count=Math.round(T.sweep*8);if(uc.timer>=1.5){T.sweep=0;T.fill=0;uc.state="toDrawer"}}
+ else if(uc.state==="toDrawer"){if(moveTo(ucar,ROWY[job.d]+.13,dt,.35)){uc.state="pour";uc.timer=0}}
+ else if(uc.state==="pour"){uc.timer+=dt;uc.tilt=Math.min(1.1,uc.timer/.5*1.1);if(uc.timer>.5)uc.count=Math.max(0,8-Math.round((uc.timer-.5)/.5*8));
+  if(uc.timer>=1.1){drawerKg[job.d]+=job.y;uc.tilt=0;uc.count=0;job=null;uc.state="park";
+   if(phase==="unloading"&&!jobs.length){phase="done";$("#status").textContent="Batch "+batchNo+" done in "+fmtH(elapsed)+". Each produce went to its own drawer."+(activePlan.overflow.length?" Overflow bin holds "+activePlan.overflow.map(k=>REC[k].n).join(", ")+" for the next batch.":"");$("#run").textContent="Run next batch"}}}
 }
 function startDrying(){phase="drying";running=true;playing=false;$("#play").textContent="▶";$("#run").textContent="Pause batch";$("#status").textContent="Drying… each tray unloads by itself when it reaches its moisture target"}
 $("#run").addEventListener("click",()=>{
  if(phase==="drying"){running=!running;$("#run").textContent=running?"Pause batch":"Resume batch";$("#status").textContent=running?"Drying…":"Paused at "+fmtH(elapsed);return}
  if(phase==="loading"||phase==="unloading")return;
  startLoading()});
-$("#reset").addEventListener("click",()=>{running=false;phase="idle";clearMovers();spawnList=[];jobs=[];job=null;prog=[0,0,0,0,0,0];elapsed=0;runSt={stored:0};trays.forEach(t=>{t.fill=0;t.sweep=0;t.fall=0});drawerKg.fill(0);drawerType.fill(null);prodLayers.forEach(p=>p.visible=false);activePlan=plan;$("#run").textContent="Run a batch";$("#status").textContent="Pick today’s crates on the left, then press Run a batch.";$("#nVis").textContent="Waiting for crates";buildBars();recalc()});
+$("#reset").addEventListener("click",()=>{running=false;phase="idle";clearMovers();spawnList=[];jobs=[];job=null;inFlight=0;car={state:"dock",t:-1,count:0,timer:0,order:[]};uc={state:"park",timer:0,tilt:0,count:0};lcar.position.y=DOCK;spread.position.z=0;prog=[0,0,0,0,0,0];elapsed=0;runSt={stored:0};trays.forEach(t=>{t.fill=0;t.sweep=0;t.fall=0});drawerKg.fill(0);drawerType.fill(null);prodLayers.forEach(p=>p.visible=false);activePlan=plan;$("#run").textContent="Run a batch";$("#status").textContent="Pick today’s crates on the left, then press Run a batch.";$("#nVis").textContent="Waiting for crates";buildBars();recalc()});
 function buildBars(){const P=activePlan;let h="";for(let t=5;t>=0;t--){const R=trayRec(t,P);h+='<div class="bar'+(t%2?" ztop":"")+'"><span>'+(R?R.n:"Empty")+'</span><i><em id="b'+t+'"></em></i><span id="p'+t+'">–</span></div>'}$("#bars").innerHTML=h}
 function updateBars(){for(let t=0;t<6;t++){const el=$("#p"+t);if(!el)continue;const R=trayRec(t);if(!R){el.textContent="–";continue}const p=Math.min(1,prog[t]),I=zInfo[t>>1];$("#b"+t).style.width=(p*100)+"%";el.textContent=(window.__sealed?"sealed, ":(I&&I.Tz?Math.round(I.Tz)+" °C, ":""))+Math.round(p*100)+"%";el.className=I&&I.hot?"hot":""}}
 const fmtClock=h=>{const hh=Math.floor(h)%24,mm=Math.round((h-Math.floor(h))*60)%60;return String(hh).padStart(2,"0")+":"+String(mm).padStart(2,"0")};
@@ -816,6 +904,11 @@ function frame(now){
   r=live;
  }
  if(!running){trayRun(r,prog.slice(),hour,0,zInfo,(phase==="idle"||phase==="done")?plan:activePlan)}window.__sealed=r.toCh<.12&&cfg.control==="ai";updateBars();
+ {const LW=loadW(r),pvNow=cfg.pvW*.8*r.G/1000;const dh=running?dt*4:(playing?dt*1.2:0);socWh=Math.max(0,Math.min(BATT,socWh+(pvNow-LW.total)*dh));
+  $("#eIn").textContent=Math.round(pvNow)+" W";$("#eOut").textContent=Math.round(LW.total)+" W";$("#eSoc").textContent=Math.round(socWh/BATT*100)+"%";const need=dailyNeed(),got=dailyPV();$("#eDay").textContent="need ~"+need+" Wh, solar ~"+got+" Wh";$("#eDay").className=got<need?"hot":"";
+  if(wiring.visible){const act={solar:r.G>20,base:true,ai:cfg.control==="ai",fans:LW.fans>0,belts:LW.belts>0,carL:car.state!=="dock"||phase==="loading",carR:!!job,wash:phase==="loading",sig:true,safe:false};
+   cables.forEach((c,ci)=>{const on=act[c.act];const col=new THREE.Color(WCOL[c.cls]).lerp(new THREE.Color(0xffffff),.5);for(let j=0;j<NDOT;j++){const idx=(ci*NDOT+j)*3;if(!on){dotPos[idx+1]=-9;continue}dotU[ci][j]=(dotU[ci][j]+dt*.6/Math.max(.2,c.len))%1;c.cp.getPointAt(dotU[ci][j],pv3);dotPos[idx]=pv3.x;dotPos[idx+1]=pv3.y;dotPos[idx+2]=pv3.z;dotCol[idx]=col.r;dotCol[idx+1]=col.g;dotCol[idx+2]=col.b}});
+   dotGeo.attributes.position.needsUpdate=true;dotGeo.attributes.color.needsUpdate=true}}
  timeR.value=hour;$("#clock").textContent=fmtClock(hour);
  $("#nSun").textContent=Math.round(r.G)+" W/m²";
  $("#nTemp").textContent=Math.round(r.T)+" °C";
@@ -841,20 +934,20 @@ function frame(now){
  const fs=Math.min(1,r.toCh/1.2);rotors.forEach((ro,i)=>ro.rotation.z+=dt*(4+30*fs)*(cfg.control==="ai"?(1+.15*Math.sin(tA*.7+i)):1));
  stepJobs(dt);stepMovers(dt);
  const loading=phase==="loading";
- if(loading&&spawnList.length){spawnT-=dt;if(spawnT<=0){spawnNext();spawnT=.38}}
- speedL+=((loading?.5:.05)-speedL)*.1;
+ if(loading&&spawnList.length){spawnT-=dt;if(spawnT<=0&&canSpawn()){spawnNext();spawnT=.38}}stepCar(dt);
+
  crate.position.lerp(loading&&spawnList.length?crateTip:crateRest,.06);crate.rotation.z+=((loading&&spawnList.length?-1.0:0)-crate.rotation.z)*.06;
  paddle.rotation.z-=dt*(loading?2.5:.4);brushes.forEach(b=>b.rotation.y+=dt*(loading?9:0));blade.rotation.x+=dt*(loading?30:0);
  drops.visible=loading;if(loading){for(let i=0;i<dropN;i++){dropU[i]=(dropU[i]+dt*1.6)%1;const xi=-2.13+(i%5)*.1;dropPos[i*3]=xi+(Math.random()-.5)*.03;dropPos[i*3+1]=1.2-dropU[i]*.32+(xi+1.93)*.4;dropPos[i*3+2]=.05+((i*7)%11/11-.5)*.28}dropGeo.attributes.position.needsUpdate=true}
  trayRollers.forEach(o=>{const t=o.t;const mv=loading||(job&&job.t===t)?6:(running&&cfg.agitator?Math.sin(tA*1.2+t)*2:0);o.m.rotation.y+=dt*mv});
- [[liftL,speedL],[liftR,speedR]].forEach(([L,sp])=>L.forEach(b=>{b.u=(b.u+dt*sp)%1;b.m.position.y=b.y0+(b.y1-b.y0)*b.u}));
- prodLayers.forEach((pl,i)=>{const k=Math.min(1,drawerKg[i]/1.2);pl.visible=k>0;pl.scale.y=Math.max(.001,.24*k);pl.position.y=ROWS[i>>1]-.14+.12*k});
+
+ prodLayers.forEach((pl,i)=>{const k=Math.min(1,drawerKg[i]/1.2);pl.visible=k>0;pl.scale.y=Math.max(.001,.14*k);pl.position.y=ROWY[i]-.08+.07*k});
  slices.forEach((im,t)=>{const R_=trayRec(t);const T=trays[t];const nVis=Math.round(T.fill*6);if(!R_||nVis<=0){im.visible=false;return}im.visible=parts.chamber.userData.ghostA>.5;
   const p=Math.min(1,prog[t]);sliceMats[t].color.copy(sliceFresh[t]).lerp(sliceDried[t],p);sliceMats[t].roughness=.45+.4*p;const sc=1-.42*p;const sh=shapeOf(R_);if(im.geometry!==sh.geo)im.geometry=sh.geo;
   const jog=cfg.agitator&&running?Math.sin(tA*1.2+t)*.03:0;
   im.userData.base.forEach((b,i)=>{if(b.c<6-nVis){m4.makeScale(0,0,0);im.setMatrixAt(i,m4);return}
    const py=b.y-.012;let x=b.x+jog+T.sweep*1.15,y=b.y,fallen=false;
-   if(x>PX){fallen=true;x=PX+.03;y=py-.05-T.fall*1.3-(i%5)*.03;if(y<.66||T.fall>=.99){m4.makeScale(0,0,0);im.setMatrixAt(i,m4);return}}
+   if(x>PX){m4.makeScale(0,0,0);im.setMatrixAt(i,m4);return}
    e3.set(0,b.r,fallen?1.2:0);q.setFromEuler(e3);v3.set(x,y,b.z);s3.set(sc*sh.sc[0],(1-.35*p)*sh.sc[1],sc*sh.sc[2]);m4.compose(v3,q,s3);im.setMatrixAt(i,m4)});im.instanceMatrix.needsUpdate=true});
 
  ctlLeds[1].visible=Math.sin(tA*6)>0;ctlLeds[2].visible=Math.sin(tA*3.1)>0;aiLed.visible=Math.sin(tA*9)>-.2;
@@ -876,7 +969,8 @@ function frame(now){
  stepFocus();
  controls.update();
  renderer.render(scene,camera);
- if(cfg.labels){const W=stage.clientWidth,H=stage.clientHeight;labEls.forEach(L=>{const g=parts[L.k];if(!g.visible||(iso&&selKeys.length&&!selKeys.includes(L.k))){L.el.style.display="none";return}
+ if(cfg.labels){const W=stage.clientWidth,H=stage.clientHeight;elabEls.forEach(L=>{if(cfg.emode==="phys"){L.el.style.display="none";return}pv3.copy(L.a).project(camera);if(pv3.z>1||Math.abs(pv3.x)>1.1||Math.abs(pv3.y)>1.1){L.el.style.display="none";return}L.el.style.display="";L.el.style.left=((pv3.x+1)/2*W)+"px";L.el.style.top=((1-pv3.y)/2*H)+"px"});
+  labEls.forEach(L=>{const g=parts[L.k];if(!g.visible||cfg.emode==="elec"||(iso&&selKeys.length&&!selKeys.includes(L.k))){L.el.style.display="none";return}
   pv3.copy(L.a).add(g.position);pv3.project(camera);if(pv3.z>1||Math.abs(pv3.x)>1.1||Math.abs(pv3.y)>1.1){L.el.style.display="none";return}
   L.el.style.display="";L.el.style.left=((pv3.x+1)/2*W)+"px";L.el.style.top=((1-pv3.y)/2*H)+"px"})}
  requestAnimationFrame(frame);
@@ -884,13 +978,13 @@ function frame(now){
 const SHELL=["control","chamber","collector","tubes"];
 /* ---------- focus, isolate, per-part explode ---------- */
 const HOME_P=camera.position.clone(),HOME_T=controls.target.clone();
-const STATIC_MATS=new Set(Object.values(M));
-function prepGhost(g){const map=new Map();g.traverse(o=>{if(o.isMesh){if(STATIC_MATS.has(o.material)){if(!map.has(o.material))map.set(o.material,o.material.clone());o.material=map.get(o.material)}else if(o.material&&o.material.userData&&o.material.userData.ghostOf===g.userData.key){map.set(o.material,o.material)}}});
+const STATIC_MATS=new Set(Object.values(M));const DYN=new Set([waxMat,lightPanel,recvMat,gelMat,...sliceMats]);const ghostable=m=>m&&(STATIC_MATS.has(m)||((m.isMeshStandardMaterial||m.isMeshPhysicalMaterial)&&!DYN.has(m)));
+function prepGhost(g){const map=new Map();g.traverse(o=>{if(o.isMesh){if(ghostable(o.material)){if(!map.has(o.material))map.set(o.material,o.material.clone());o.material=map.get(o.material)}else if(o.material&&o.material.userData&&o.material.userData.ghostOf===g.userData.key){map.set(o.material,o.material)}}});
  const mats=[...new Set([...(g.userData.ghostMats||[]),...map.values()])];mats.forEach(m=>{m.userData.ghostOf=g.userData.key;if(m.userData.o===undefined){m.userData.o=m.opacity;m.userData.t=m.transparent;m.userData.dw=m.depthWrite}});g.userData.ghostMats=mats;g.userData.ghostA=1}
 Object.values(parts).forEach(prepGhost);
 function setGhost(g,a){g.userData.ghostA=a;g.userData.ghostMats.forEach(m=>{const t=a<.99;m.transparent=t||m.userData.t;m.opacity=m.userData.o*a;m.depthWrite=t?false:m.userData.dw;m.needsUpdate=true})}
 let iso=false,pex=false,pexAmt=0,expKeys=[],fly=null,selKeys=[];
-function applyGhosts(){Object.entries(parts).forEach(([k,g])=>{let a=1;if(iso&&selKeys.length&&!selKeys.includes(k))a=.15;else if(cfg.exploded&&SHELL.includes(k)&&!selKeys.includes(k))a=.28;if(g.userData.ghostA!==a)setGhost(g,a)});slices.forEach(im=>im.visible=parts.chamber.userData.ghostA>.5)}
+function applyGhosts(){const ELEC=["pv","power","nodes","wiring","ai"];Object.entries(parts).forEach(([k,g])=>{let a=1;if(cfg.emode==="elec"&&!ELEC.includes(k)&&!selKeys.includes(k))a=.12;else if(iso&&selKeys.length&&!selKeys.includes(k))a=.15;else if(cfg.exploded&&SHELL.includes(k)&&!selKeys.includes(k))a=.28;if(g.userData.ghostA!==a)setGhost(g,a)});slices.forEach(im=>im.visible=parts.chamber.userData.ghostA>.5)}
 function unionBox(keys){const b=new THREE.Box3();keys.forEach(k=>{if(parts[k].visible)b.union(new THREE.Box3().setFromObject(parts[k]))});return b}
 function flyTo(keys,mult){keys=[].concat(keys);const b=unionBox(keys);if(b.isEmpty())return;const c=b.getCenter(new THREE.Vector3());const sz=Math.max(.4,b.getSize(new THREE.Vector3()).length());const dir=camera.position.clone().sub(controls.target).normalize();if(dir.y<.3){dir.y=.3;dir.normalize()}const t=c.clone();t.y-=.16*sz*Math.min(mult,2);fly={t,p:t.clone().addScaledVector(dir,Math.max(1.1,sz*mult))}}
 controls.addEventListener("start",()=>{fly=null});
