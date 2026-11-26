@@ -20,6 +20,16 @@
  <li><b>Store</b>Six sealed drawers watch humidity and CO₂. The operator bags product when the screen says a drawer is full.</li>
 </ol>
 
+<h2>How air flows</h2>
+<ol class="steps">
+ <li><b>In at the front</b>Outside air enters along the low front edge of the canopy, about 2.2 m up, through a washable mesh filter.</li>
+ <li><b>Heated twice</b>It splits to flow over and under the black zig-zag sheet, rising up the slope to the back, while the vacuum tubes heat their share.</li>
+ <li><b>Down to the heat wall</b>From the header at the high back edge, a duct drops the hot air into the wax heat wall, then the zone fans push it across the trays.</li>
+ <li><b>Out at the back</b>Moist air leaves through the chimney at the back, or the AI sends it round again while it’s still dry.</li>
+ <li><b>Closed at night</b>When there’s no heat left, the intake and zone dampers close together so humid night air stays out; the silica gel keeps drying.</li>
+</ol>
+<p class="note">Why the intake is at the low front: hot air rises, so air entering low and leaving high moves the way the fans pull it. The intake is far from the wet exhaust at the back, high above ground dust and wash splashes, and sheltered from rain by the canopy overhang.</p>
+
 <h2>Electrical system</h2>
 <p>The heat is all solar-thermal. Electricity only runs fans, motors and electronics, from its own solar panel:</p>
 <ol class="steps">
@@ -49,19 +59,56 @@
 </table>
 <p class="note">Temperatures are starting points to confirm in tests. Yam, plantain and cassava are left out because they need peeling. Onion, garlic and fish are left out because their smell taints other produce.</p>
 
-<h2>Who builds what</h2>
+<h2>Why we added things beyond the brief</h2>
 <table>
- <tr><th>Code</th><th>Name</th><th>Area</th></tr>
- <tr><td>ME1</td><td>Jamiat Opeyemi Akande</td><td>Roof collector, evacuated tubes, wax heat wall</td></tr>
- <tr><td>ME2</td><td>Obaloluwa Vincent Ayeni</td><td>Three-zone chamber, fans, silica gel bed, recirculation, airflow (CFD)</td></tr>
- <tr><td>ME3</td><td>Beloved Oyebode Adeoye</td><td>Belt trays, combs, loading and unloading carriages</td></tr>
- <tr><td>MEE1</td><td>Emmanuel Adesope Arasanyin</td><td>Moisture sensing per tray</td></tr>
- <tr><td>MEE2</td><td>Mayowa Samuel Elegbede</td><td>Whole electrical system: solar panel, battery, fuse board, controllers, drivers, wiring, safety, touchscreen</td></tr>
- <tr><td>MEE3</td><td>Oluwatoyin Muftaudeen Jimoh</td><td>AI control, recipes and routing</td></tr>
- <tr><td>MEE4</td><td>Olatunde Akolade Salako</td><td>Vision: produce type and quality</td></tr>
- <tr><td>MEE5</td><td>Praise Timilehin Olumuyiwa</td><td>Wash module, gates, cutter, carriage and hatch control</td></tr>
- <tr><td>MEE6</td><td>Babatunde Muhibudeen Raji</td><td>Smart storage drawers and dashboard</td></tr>
+ <tr><th>Addition</th><th>Why it’s needed</th></tr>
+ <tr><td>Washing</td><td>Soil and mould spores on unwashed produce spoil the dried product and raise aflatoxin risk. Automatic washing makes it safe to sell and saves the farmer’s hardest job.</td></tr>
+ <tr><td>Sorting channel</td><td>The camera can only judge one piece at a time, so pieces must be lined up for it to reject damaged ones and route each produce.</td></tr>
+ <tr><td>Slicer</td><td>Whole tomatoes and peppers take a week or more and can rot inside. Even slices dry in hours to a day or two, and dry evenly.</td></tr>
+ <tr><td>Belt trays and carriages</td><td>Fixed trays need a person to load and empty them. Belts and carriages make loading and unloading automatic.</td></tr>
+ <tr><td>Vacuum tubes instead of the mirror dish</td><td>The dish uses only direct sun, which haze and cloud cut sharply in Ibadan: about 10 days per batch in harmattan in our model. Tubes and the roof collector also use scattered light: about 29 hours. No tracking motors or 4.3 m mast, cheaper and safer in wind.</td></tr>
+ <tr><td>Small solar panel</td><td>Heating stays 100% solar-thermal as briefed; the panel never heats. Fans, motors, sensors, AI and camera need electricity, and most farms have no grid. A small panel and battery is the only fuel-free way to run them.</td></tr>
 </table>
+
+<h2>How the work was redistributed</h2>
+<p>When Olagoke Oluwaseyi (ME4) joined, the work was shared out again. The goal was not just equal amounts of work, but scopes that match each student’s project title, so everyone can design, build, test and write a full thesis on their own system while it still fits into one machine.</p>
+<h3 style="font-size:20px;margin:18px 0 8px">The rules we followed</h3>
+<ul class="plan">
+ <li><b>Title first.</b> Each person’s core work comes straight from their project title.</li>
+ <li><b>One owner per part.</b> No part is shared. Where two systems meet, we define the hand-over instead of splitting ownership.</li>
+ <li><b>Structure vs. function.</b> Seyi builds the frames things sit on; the owner of each system keeps its design, performance and testing.</li>
+ <li><b>New work goes where it fits.</b> Washing was in nobody’s title, so it became the functional half of Seyi’s new topic.</li>
+</ul>
+<h3 style="font-size:20px;margin:18px 0 8px">What changed and why</h3>
+<ul class="plan">
+ <li><b>ME4, Olagoke Oluwaseyi (new).</b> Proposed title: <i>Design, CAD modelling and fabrication of the integrated structural frame and automatic wash-preparation module.</i> She takes the main frame, base, canopy supports, storage cabinet and the wash module, plus the full AutoCAD drawings everyone builds from. This uses her CAD strength and gives her a real working subsystem, not only drawings.</li>
+ <li><b>ME1, Jamiat Opeyemi Akande.</b> Her title is the solar collector and PCM storage, so she keeps all of that: roof collector, tubes, air intake and wax wall. Only the canopy support frame moves to Seyi.</li>
+ <li><b>ME2, Obaloluwa Vincent Ayeni.</b> His title is the multi-zone chamber and CFD, so the chamber, fans, dampers, recirculation ducts and silica gel bed stay. Deciding <i>when</i> to recirculate moves to the AI (MEE3), because that’s a control decision, not airflow design.</li>
+ <li><b>ME3, Beloved Oyebode Adeoye.</b> His title is agitation and redistribution, so he keeps the belt trays, combs and the spreader that lays an even layer. The carriages that move produce go to MEE5, whose title is handling.</li>
+ <li><b>MEE1, Emmanuel Adesope Arasanyin.</b> Moisture sensing by sensor fusion. He gains the humidity sensors at the intake and exhaust, since recirculation depends on them.</li>
+ <li><b>MEE2, Mayowa Samuel Elegbede.</b> Embedded control and safety. He keeps the whole electrical system. The technical bay’s steel structure goes to Seyi and the touchscreen software to MEE6.</li>
+ <li><b>MEE3, Oluwatoyin Muftaudeen Jimoh.</b> AI adaptive control for energy-efficient drying. He gains recirculation decisions and energy budgeting, so every decision lives in one place.</li>
+ <li><b>MEE4, Olatunde Akolade Salako.</b> Vision for quality assessment and classification. He gains a second camera that grades the dried product, so quality is checked at the output as well as the intake.</li>
+ <li><b>MEE5, Praise Timilehin Olumuyiwa.</b> Automated handling and sorting. The wash module goes to Seyi, and he gains full ownership of both carriages, so everything that moves produce is his.</li>
+ <li><b>MEE6, Babatunde Muhibudeen Raji.</b> IoT monitoring and predictive storage. He gains the touchscreen software and the digital twin (this 3D site), which fit “digital monitoring”. The cabinet structure goes to Seyi.</li>
+</ul>
+<p class="note">Seyi’s title is a proposal until the supervisor confirms it.</p>
+
+<h2>Who builds what: before and after Seyi joined</h2>
+<p>Each scope follows the student’s project title. In the 3D model, use “Team plan” under View to switch between the two, then pick a name under “Go to person”.</p>
+<div style="overflow-x:auto"><table>
+ <tr><th>Code</th><th>Name</th><th>Before Seyi</th><th>After Seyi</th><th>Change</th></tr>
+ <tr><td>ME1</td><td>Jamiat Opeyemi Akande</td><td>Roof collector, tubes and wax wall, including their mounting frames</td><td>Roof collector, tubes, air intake and wax wall: design, build, efficiency tests</td><td>Canopy supports go to ME4</td></tr>
+ <tr><td>ME2</td><td>Obaloluwa Vincent Ayeni</td><td>Chamber, fans, dampers, silica gel, recirculation duct, CFD</td><td>Same hardware and CFD</td><td>Recirculation decisions go to MEE3</td></tr>
+ <tr><td>ME3</td><td>Beloved Oyebode Adeoye</td><td>Belt trays, combs and the carriage mechanics (shared)</td><td>Belt trays, combs, belt drives and the spreader head (agitation and redistribution)</td><td>Carriages go fully to MEE5</td></tr>
+ <tr><td>ME4</td><td>Olagoke Oluwaseyi</td><td>Not on the team yet</td><td>Frame, base, canopy supports, storage cabinet, wash module, full AutoCAD drawings</td><td>New member</td></tr>
+ <tr><td>MEE1</td><td>Emmanuel Adesope Arasanyin</td><td>Tray load cells and zone sensors, moisture estimate</td><td>Same, plus intake and exhaust humidity and temperature sensing</td><td>Gains air-path sensing</td></tr>
+ <tr><td>MEE2</td><td>Mayowa Samuel Elegbede</td><td>Whole electrical system, technical bay and touchscreen</td><td>Controllers, nodes, drivers, power system, wiring, touchscreen hardware, E-stop and interlocks</td><td>Bay structure to ME4, screen software to MEE6</td></tr>
+ <tr><td>MEE3</td><td>Oluwatoyin Muftaudeen Jimoh</td><td>AI control: temperatures, routing, heat source, unloading</td><td>Same, plus recirculation decisions and energy budgeting</td><td>Gains recirculation logic</td></tr>
+ <tr><td>MEE4</td><td>Olatunde Akolade Salako</td><td>Intake vision: type and quality</td><td>Intake vision plus a camera grading dried product on the unloading carriage</td><td>Gains dried-product grading</td></tr>
+ <tr><td>MEE5</td><td>Praise Timilehin Olumuyiwa</td><td>Wash module, gates, cutter, carriage control</td><td>Single-file feed, gates, cutter, both carriages and drawer hatches</td><td>Wash module to ME4, gains full carriages</td></tr>
+ <tr><td>MEE6</td><td>Babatunde Muhibudeen Raji</td><td>Storage sensing, dashboard, spoilage prediction</td><td>Same, plus touchscreen software and the digital twin</td><td>Gains HMI software and digital twin</td></tr>
+</table></div>
 
 <h2>Using the 3D model</h2>
 <ul class="plan">
